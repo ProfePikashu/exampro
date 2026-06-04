@@ -961,13 +961,12 @@ async function autosave(){
   SESSION.last_saved_at = new Date().toISOString();
   saveSessionLocal(SESSION);
   if(sb){
-    try{
-      await sb.from('exam_sessions').update({
-        answers: SESSION.answers,
-        last_saved_at: SESSION.last_saved_at,
-        session_log: SESSION.session_log
-      }).eq('session_token', SESSION.session_token);
-    }catch(e){}
+    const { error: sbErr } = await sb.from('exam_sessions').update({
+      answers:       SESSION.answers,
+      last_saved_at: SESSION.last_saved_at,
+      session_log:   SESSION.session_log
+    }).eq('session_token', SESSION.session_token);
+    if(sbErr) console.warn('Autosave Supabase error:', sbErr.message);
   }
   // flash dot
   const dot = document.getElementById('autosave-dot');
@@ -1450,12 +1449,21 @@ async function submitExamen(){
   // Guardar en Supabase si está configurado
   if(sb){
     try{
-      await sb.from('exam_sessions').update({
-        answers: SESSION.answers,
-        submitted_at: now,
-        session_log: SESSION.session_log
-      }).eq('session_token', SESSION.session_token);
-    }catch(e){ console.warn('Supabase submit failed:', e); }
+      // Upsert: actualiza si existe, crea si no existe
+      const { error: sbErr } = await sb.from('exam_sessions').upsert({
+        session_token: SESSION.session_token,
+        nombre:        SESSION.nombre,
+        dni:           SESSION.dni,
+        email:         SESSION.email,
+        twitch:        SESSION.twitch,
+        started_at:    SESSION.started_at,
+        answers:       SESSION.answers,
+        submitted_at:  now,
+        session_log:   SESSION.session_log
+      }, { onConflict: 'session_token' });
+      if(sbErr){ console.error('Supabase submit error:', sbErr); }
+      else { console.log('✓ Supabase: respuestas guardadas'); }
+    }catch(e){ console.warn('Supabase submit exception:', e); }
   }
 
   // Enviar a Google Apps Script (si está configurado)
