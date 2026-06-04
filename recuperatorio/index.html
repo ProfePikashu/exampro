@@ -541,7 +541,7 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
   <div class="submit-card" id="submit-section">
     <div class="error-box" id="err-submit"></div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;text-align:center">
-      Al enviar, se descargará un archivo CSV con tus respuestas. Enviáselo al docente por el medio indicado.
+      Al enviar, tus respuestas quedarán registradas automáticamente. Podés cerrar esta ventana una vez confirmado el envío.
     </p>
     <button class="btn-submit" id="btn-submit" onclick="submitExamen()">
       <i class="fa-solid fa-paper-plane"></i> Enviar recuperatorio
@@ -1349,7 +1349,7 @@ function collectAnswers(){
       if(checked.length) ans[id] = checked.join('; ');
     } else if(q.type==='draw'){
       const canvas = document.getElementById('canvas_'+id);
-      if(canvas) ans[id] = '[DIBUJO:'+canvas.toDataURL('image/png').slice(0,30)+'...]';
+      if(canvas) ans[id] = canvas.toDataURL('image/png'); // full base64 para corrección
     }
   }));
   SESSION.answers = ans;
