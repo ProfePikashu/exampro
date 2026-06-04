@@ -1105,9 +1105,10 @@ function renderInput(q){
 // Shuffle determinístico por alumno: misma semilla = mismo orden para el mismo estudiante
 function shuffleOpts(opts, seed){
   const a = [...opts];
-  let h = (seed||'x').split('').reduce((acc,c)=>acc*31+c.charCodeAt(0)|0, 0);
+  // >>>0 fuerza uint32, evita negativos que darían a[-1] = undefined
+  let h = (seed||'x').split('').reduce((acc,c)=>((acc*31+c.charCodeAt(0))>>>0), 0);
   for(let i=a.length-1; i>0; i--){
-    h = (Math.imul(h,9301)+49297) % 233280;
+    h = ((Math.imul(h,9301)+49297)>>>0) % 233280;
     const j = Math.floor((h/233280)*(i+1));
     [a[i],a[j]] = [a[j],a[i]];
   }
