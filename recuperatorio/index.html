@@ -996,16 +996,24 @@ function restoreExam(){
 }
 
 async function guardarYCerrar(){
+  // 1. PRIMERO detener timers para evitar race conditions con autosave
+  clearInterval(timerInterval);
+  clearInterval(autosaveInterval);
+
   const btn = document.getElementById('btn-guardar-cerrar');
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
   btn.style.pointerEvents = 'none';
 
+  // 2. Recolectar respuestas del DOM ANTES de tocarlo
   collectAnswers();
   SESSION.session_log = SESSION.session_log || [];
   SESSION.session_log.push({type:'save_close', ts: new Date().toISOString()});
   SESSION.last_saved_at = new Date().toISOString();
+
+  // 3. Guardar en localStorage inmediatamente (sincrono, seguro)
   saveSessionLocal(SESSION);
 
+  // 4. Guardar en Supabase (async, pero timers ya detenidos → sin race)
   if(sb){
     const { error } = await sb.from('exam_sessions').update({
       answers:       SESSION.answers,
@@ -1013,26 +1021,24 @@ async function guardarYCerrar(){
       session_log:   SESSION.session_log
     }).eq('session_token', SESSION.session_token);
     if(error) console.error('Supabase save_close error:', error.message);
+    else console.log('✓ Guardado en Supabase antes de cerrar');
   }
 
-  // Pantalla de cierre
+  // 5. Ocultar el form SIN usar innerHTML += (eso destruye el DOM)
   document.getElementById('step2').style.display = 'none';
   document.getElementById('side-panel').style.display = 'none';
-  clearInterval(timerInterval);
-  clearInterval(autosaveInterval);
 
-  document.getElementById('main').innerHTML += `
-    <div style="max-width:500px;margin:80px auto;text-align:center;">
-      <div style="width:72px;height:72px;background:#052e16;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;color:#22c55e;margin:0 auto 20px;">💾</div>
-      <h2 style="font-size:20px;font-weight:700;color:#22c55e;margin-bottom:8px;">Progreso guardado</h2>
-      <p style="font-size:13px;color:#86efac;margin-bottom:6px;">Tus respuestas fueron guardadas correctamente.</p>
-      <p style="font-size:12px;color:#4ade80;">Cuando quieras continuar, abrí el mismo link, ingresá con tu <strong>correo electrónico</strong> y <strong>DNI</strong> y retomá donde lo dejaste.</p>
-      <p style="font-size:11px;color:#166534;margin-top:16px;">Tiempo restante: <strong id="tiempo-restante-cierre"></strong></p>
-    </div>`;
-
-  // Mostrar tiempo restante en la pantalla de cierre
+  // 6. Usar appendChild para NO destruir el DOM existente
   const remaining = EXAM_DURATION_MS - (Date.now() - new Date(SESSION.started_at).getTime());
-  document.getElementById('tiempo-restante-cierre').textContent = formatMs(Math.max(0, remaining));
+  const closeDiv = document.createElement('div');
+  closeDiv.style.cssText = 'max-width:500px;margin:80px auto;text-align:center;';
+  closeDiv.innerHTML = `
+    <div style="width:72px;height:72px;background:#052e16;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;color:#22c55e;margin:0 auto 20px;">💾</div>
+    <h2 style="font-size:20px;font-weight:700;color:#22c55e;margin-bottom:8px;">Progreso guardado</h2>
+    <p style="font-size:13px;color:#86efac;margin-bottom:6px;">Tus respuestas fueron guardadas correctamente.</p>
+    <p style="font-size:12px;color:#4ade80;line-height:1.6;">Cuando quieras continuar, abrí el mismo link, ingresá con tu <strong>correo electrónico</strong> y <strong>DNI</strong> y retomá donde lo dejaste.</p>
+    <p style="font-size:11px;color:#166534;margin-top:16px;">Tiempo restante: <strong>${formatMs(Math.max(0, remaining))}</strong></p>`;
+  document.getElementById('main').appendChild(closeDiv);
 }
 
 function showExpired(){
