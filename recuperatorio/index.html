@@ -367,6 +367,34 @@ canvas.draw-canvas{display:block;background:#fff;width:100%;cursor:crosshair;tou
 
 /* ── SCROLL TOP ──────────────────────────────────────── */
 #scroll-top{position:fixed;bottom:20px;right:20px;width:36px;height:36px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;box-shadow:0 4px 12px #3b82f640}
+
+/* ── PANEL FLOTANTE DERECHO ──────────────────────────── */
+#side-panel{
+  position:fixed;right:0;top:50%;transform:translateY(-50%);
+  z-index:150;display:flex;flex-direction:column;gap:8px;
+  padding:10px 0 10px 10px;
+}
+.side-btn{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  width:48px;height:48px;border-radius:10px 0 0 10px;
+  border:1px solid transparent;border-right:none;
+  cursor:pointer;font-size:18px;transition:all .2s;
+  box-shadow:-3px 2px 12px #00000040;
+}
+.side-btn:hover{ width:56px; }
+.side-btn-tooltip{
+  position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);
+  background:#0f172a;border:1px solid var(--border);border-radius:10px;
+  padding:12px 14px;font-size:12px;color:var(--text);line-height:1.6;
+  width:260px;text-align:left;white-space:normal;pointer-events:none;
+  opacity:0;transition:opacity .2s;box-shadow:0 8px 24px #00000060;
+}
+.side-btn:hover .side-btn-tooltip{ opacity:1; }
+.side-btn-tooltip strong{ color:var(--blue-ll);display:block;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em; }
+.side-btn-tooltip::after{
+  content:'';position:absolute;right:-7px;top:50%;transform:translateY(-50%);
+  border:6px solid transparent;border-left-color:#334155;border-right:none;
+}
 #scroll-top:hover{background:var(--blue-l)}
 
 /* ── DIVIDER ─────────────────────────────────────────── */
@@ -558,6 +586,22 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
 </div>
 
 </div><!-- /main -->
+
+<!-- PANEL FLOTANTE (oculto hasta que inicia el examen) -->
+<div id="side-panel" style="display:none">
+
+  <!-- GUARDAR Y CERRAR -->
+  <button class="side-btn" id="btn-guardar-cerrar"
+    style="background:#14532d;border-color:#16a34a;color:#4ade80;"
+    onclick="guardarYCerrar()">
+    <i class="fa-solid fa-floppy-disk"></i>
+    <div class="side-btn-tooltip">
+      <strong>💾 Guardar y cerrar</strong>
+      Utilizá este botón solo si debés retirarte por un momento. Guardará tu progreso y podrás reanudarlo desde este mismo navegador u otro dispositivo. Recordá ingresar con tu <b>correo electrónico</b> y <b>DNI</b> con los que te registraste en el curso.
+    </div>
+  </button>
+
+</div>
 
 <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
   <i class="fa-solid fa-chevron-up"></i>
@@ -951,6 +995,46 @@ function restoreExam(){
   startAutosave();
 }
 
+async function guardarYCerrar(){
+  const btn = document.getElementById('btn-guardar-cerrar');
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+  btn.style.pointerEvents = 'none';
+
+  collectAnswers();
+  SESSION.session_log = SESSION.session_log || [];
+  SESSION.session_log.push({type:'save_close', ts: new Date().toISOString()});
+  SESSION.last_saved_at = new Date().toISOString();
+  saveSessionLocal(SESSION);
+
+  if(sb){
+    const { error } = await sb.from('exam_sessions').update({
+      answers:       SESSION.answers,
+      last_saved_at: SESSION.last_saved_at,
+      session_log:   SESSION.session_log
+    }).eq('session_token', SESSION.session_token);
+    if(error) console.error('Supabase save_close error:', error.message);
+  }
+
+  // Pantalla de cierre
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('side-panel').style.display = 'none';
+  clearInterval(timerInterval);
+  clearInterval(autosaveInterval);
+
+  document.getElementById('main').innerHTML += `
+    <div style="max-width:500px;margin:80px auto;text-align:center;">
+      <div style="width:72px;height:72px;background:#052e16;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;color:#22c55e;margin:0 auto 20px;">💾</div>
+      <h2 style="font-size:20px;font-weight:700;color:#22c55e;margin-bottom:8px;">Progreso guardado</h2>
+      <p style="font-size:13px;color:#86efac;margin-bottom:6px;">Tus respuestas fueron guardadas correctamente.</p>
+      <p style="font-size:12px;color:#4ade80;">Cuando quieras continuar, abrí el mismo link, ingresá con tu <strong>correo electrónico</strong> y <strong>DNI</strong> y retomá donde lo dejaste.</p>
+      <p style="font-size:11px;color:#166534;margin-top:16px;">Tiempo restante: <strong id="tiempo-restante-cierre"></strong></p>
+    </div>`;
+
+  // Mostrar tiempo restante en la pantalla de cierre
+  const remaining = EXAM_DURATION_MS - (Date.now() - new Date(SESSION.started_at).getTime());
+  document.getElementById('tiempo-restante-cierre').textContent = formatMs(Math.max(0, remaining));
+}
+
 function showExpired(){
   document.getElementById('step1').style.display = 'none';
   document.getElementById('step2').style.display = 'none';
@@ -1031,6 +1115,7 @@ function qId(n){ return 'q_'+String(n).replace('.','_'); }
 function renderExam(){
   document.getElementById('step1').style.display = 'none';
   document.getElementById('step2').style.display = 'block';
+  document.getElementById('side-panel').style.display = 'flex';
   root.innerHTML = '';
   snav.innerHTML = '';
   totalQuestions = 0;
