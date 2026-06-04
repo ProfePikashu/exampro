@@ -637,7 +637,7 @@ const SECTIONS = [
     {n:4,  sub:'Hardware · Computadoras', t:'Enliste la mayor cantidad de periféricos que conozca para una PC de escritorio (mínimo 5).', type:'dev'},
     {n:5,  sub:'Hardware · Computadoras', t:'Enliste el hardware interno básico y esencial de una PC de escritorio. Desarrolle cada componente.', type:'list', minItems:6},
     {n:6,  sub:'Hardware · Computadoras', t:'Desarrolle las diferencias entre una computadora de escritorio y una portátil.', type:'dev'},
-    {n:7,  sub:'Hardware · Computadoras', t:'Enliste de mayor a menor los tamaños de gabinetes/torres. De igual forma, los tamaños de placas madre (incluir Nano, Pico, etc.).', type:'list', minItems:8},
+    {n:7,  sub:'Hardware · Computadoras', t:'Enliste de mayor a menor los tamaños de gabinetes/torres. De igual forma, los tamaños de placas madre (incluir Nano, Pico, etc.).', type:'list', minItems:8, subsections:[{label:'Gabinetes / Torres', minItems:4},{label:'Placas Madre', minItems:4}]},
     {n:8,  sub:'CPU', t:'¿Cuál es la función de los VRM?', type:'radio', opts:['Proteger y regular la energía que recibe el Procesador','Estética','Guardar Caché','Memoria volátil']},
     {n:9,  sub:'CPU', t:'Describa, con sus propias palabras, qué es y cómo funciona el CPU.', type:'dev'},
     {n:10, sub:'CPU', t:'Describa "núcleos" e "hilos".', type:'dev'},
@@ -1173,7 +1173,8 @@ function renderExam(){
 
   // init list tables
   SECTIONS.forEach(sec => sec.qs.forEach(q => {
-    if(q.type==='list'){ ltInit(qId(q.n), q.minItems||1, false); }
+    if(q.type==='list' && q.subsections){ ltInitSectioned(qId(q.n), q.subsections); }
+    else if(q.type==='list'){ ltInit(qId(q.n), q.minItems||1, false); }
     if(q.type==='list_prefilled'){ ltInit(qId(q.n), q.prefill.length, true, q.prefill); }
   }));
 
@@ -1317,6 +1318,96 @@ function ltInit(id, minItems, prefilled, prefillTitles){
   }
 }
 
+// Lista con subsecciones (ej: Gabinetes / Placas Madre)
+function ltInitSectioned(id, subsections){
+  const container = document.getElementById('lt_'+id);
+  if(!container) return;
+
+  let sectionsHtml = subsections.map((sec, si) => `
+    <div class="lt-section" id="lt-sec-${id}-${si}">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--card);border-top:${si>0?'2px solid var(--blue)':'none'};">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue-ll);">
+          ${si===0?'<i class="fa-solid fa-server" style="margin-right:5px;"></i>':'<i class="fa-solid fa-microchip" style="margin-right:5px;"></i>'}
+          ${sec.label}
+        </span>
+        <span style="font-size:10px;color:var(--muted);">Mínimo ${sec.minItems||3} ítems — de mayor a menor</span>
+      </div>
+      <div class="lt-rows" id="lt-rows-${id}-s${si}"></div>
+      <div class="lt-footer" style="padding:6px 10px;">
+        <button type="button" class="lt-add-btn" onclick="ltAddRowToSection('${id}',${si})">
+          <i class="fa-solid fa-plus"></i> Añadir ${sec.label}
+        </button>
+      </div>
+    </div>`).join('');
+
+  container.innerHTML = `
+    <div class="list-table">
+      <div class="lt-header">
+        <div>#</div><div>Elemento / Título</div>
+        <div class="lth-dev">Desarrollo</div><div></div>
+      </div>
+      ${sectionsHtml}
+    </div>`;
+
+  // Iniciar con filas vacías por sección
+  subsections.forEach((sec, si) => {
+    const count = Math.min(sec.minItems||3, 3);
+    for(let i=0; i<count; i++) ltAddRowToSection(id, si, false);
+  });
+}
+
+function ltAddRowToSection(id, sectionIdx, prefilled, title){
+  const rows = document.getElementById(`lt-rows-${id}-s${sectionIdx}`);
+  if(!rows) return;
+  // Numeración global: contar todas las filas de todas las secciones
+  let globalIdx = 1;
+  let si = 0;
+  while(document.getElementById(`lt-rows-${id}-s${si}`)){
+    globalIdx += document.getElementById(`lt-rows-${id}-s${si}`).children.length;
+    if(si === sectionIdx) break;
+    si++;
+  }
+  const rowIdx  = rows.children.length + 1;
+  const rowId   = `ltr_${id}_s${sectionIdx}_${rowIdx}`;
+  const div     = document.createElement('div');
+  div.className = 'lt-row'; div.id = rowId;
+  div.innerHTML = `
+    <div class="lt-row-head">
+      <div class="lt-row-num">${globalIdx}</div>
+      <input type="text" class="lt-title-input" placeholder="Nombre del elemento..."
+             value="${escHtml(title||'')}" ${prefilled?'readonly':''} oninput="ltRenumberSectioned('${id}');calcProgress()">
+      <button type="button" class="lt-dev-toggle" onclick="ltToggleDev(this,'${rowId}')">
+        <span class="dot"></span><i class="fa-solid fa-pen-to-square"></i> Agregar desarrollo
+      </button>
+      ${prefilled ? '' : `<button type="button" class="lt-remove-btn" onclick="ltRemoveRowFromSection('${rowId}','${id}')" title="Quitar"><i class="fa-solid fa-times"></i></button>`}
+    </div>
+    <div class="lt-dev-area" id="ltdev_${rowId}" style="display:none">
+      <textarea placeholder="Desarrollo sin límite de caracteres..." oninput="ltOnDevInput(this,'${rowId}')"></textarea>
+    </div>`;
+  rows.appendChild(div);
+  ltRenumberSectioned(id);
+  calcProgress();
+}
+
+function ltRemoveRowFromSection(rowId, id){
+  const row = document.getElementById(rowId);
+  if(row){ row.remove(); ltRenumberSectioned(id); calcProgress(); }
+}
+
+function ltRenumberSectioned(id){
+  let global = 1;
+  let si = 0;
+  while(true){
+    const rows = document.getElementById(`lt-rows-${id}-s${si}`);
+    if(!rows) break;
+    [...rows.children].forEach(row => {
+      const num = row.querySelector('.lt-row-num');
+      if(num) num.textContent = global++;
+    });
+    si++;
+  }
+}
+
 function ltAddRow(id, prefilled, title){
   const rows = document.getElementById('lt-rows-'+id);
   if(!rows) return;
@@ -1376,10 +1467,28 @@ function ltRenumber(id){
   });
 }
 
-function ltGetValue(id){
+function ltIsSectioned(id){
+  return !!document.getElementById(`lt-rows-${id}-s0`);
+}
+
+function ltGetAllRows(id){
+  if(ltIsSectioned(id)){
+    const all = [];
+    let si = 0;
+    while(true){
+      const rows = document.getElementById(`lt-rows-${id}-s${si}`);
+      if(!rows) break;
+      all.push(...rows.children);
+      si++;
+    }
+    return all;
+  }
   const rows = document.getElementById('lt-rows-'+id);
-  if(!rows) return '';
-  return [...rows.children].map(row => {
+  return rows ? [...rows.children] : [];
+}
+
+function ltGetValue(id){
+  return ltGetAllRows(id).map(row => {
     const title = row.querySelector('.lt-title-input')?.value.trim()||'';
     const dev   = row.querySelector('textarea')?.value.trim()||'';
     return title + (dev ? '||'+dev : '');
@@ -1388,12 +1497,41 @@ function ltGetValue(id){
 
 function ltSetValue(id, val){
   if(!val) return;
+  const items = val.split('|||');
+  if(ltIsSectioned(id)){
+    // Distribuir ítems entre secciones: llenar s0 hasta su minItems, resto a s1
+    let si = 0, itemIdx = 0;
+    while(true){
+      const secEl = document.getElementById(`lt-sec-${id}-${si}`);
+      const rows  = document.getElementById(`lt-rows-${id}-s${si}`);
+      if(!rows) break;
+      // Inferir minItems de la sección a partir del hint visible
+      const hintText = secEl?.querySelector('[style*="margin-right"]')?.parentElement?.textContent || '';
+      const m = hintText.match(/Mínimo (\d+)/);
+      const secMin = m ? parseInt(m[1]) : 3;
+      // Asignar ítems a esta sección
+      const secItems = items.slice(itemIdx, itemIdx + Math.max(secMin, rows.children.length));
+      while(rows.children.length < secItems.length) ltAddRowToSection(id, si, false);
+      secItems.forEach((item, i) => {
+        const [title, dev] = item.split('||');
+        const row = rows.children[i]; if(!row) return;
+        const ti = row.querySelector('.lt-title-input');
+        const ta = row.querySelector('textarea');
+        if(ti && !ti.readOnly) ti.value = title||'';
+        if(ta && dev){ ta.value=dev; ltOnDevInput(ta,row.id); document.getElementById('ltdev_'+row.id).style.display='block'; row.querySelector('.lt-dev-toggle')?.classList.add('open','has-content'); }
+      });
+      itemIdx += secItems.length;
+      si++;
+    }
+    ltRenumberSectioned(id);
+    return;
+  }
+
   const rows = document.getElementById('lt-rows-'+id);
   if(!rows) return;
-  const items = val.split('|||');
-  // ensure enough rows
-  while(rows.children.length < items.length) ltAddRow(id, false);
-  items.forEach((item, i) => {
+  const items2 = val.split('|||');
+  while(rows.children.length < items2.length) ltAddRow(id, false);
+  items2.forEach((item, i) => {
     const [title, dev] = item.split('||');
     const row = rows.children[i];
     if(!row) return;
