@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recuperatorio — AyRPC 2025</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f172a;--panel:#111827;--card:#1e293b;--deep:#0b1220;
+  --border:#334155;--border2:#475569;--text:#e2e8f0;--muted:#94a3b8;
+  --blue:#3b82f6;--blue-l:#60a5fa;--blue-ll:#93c5fd;
+  --green:#059669;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;
+  --practico-bg:#1c0f00;--practico-border:#b45309;--practico-text:#fcd34d;
+}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh;font-size:14px}
+a{color:var(--blue-l);text-decoration:none}
+
+/* ── TOPBAR ─────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:200;
+  background:#0f172acc;backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:10px 20px;display:flex;align-items:center;gap:12px;
+}
+.topbar-info{flex:1;min-width:0}
+.topbar-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.topbar-title{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.timer-wrap{display:flex;align-items:center;gap:7px}
+.timer-label{font-size:10px;color:var(--muted);text-transform:uppercase}
+.timer-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--green);letter-spacing:.03em;transition:color .3s}
+.timer-val.amber{color:var(--amber)}
+.timer-val.red{color:var(--red)}
+.timer-val.blink{animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:.3}}
+.prog-wrap{display:flex;align-items:center;gap:8px}
+.prog-label{font-size:11px;color:var(--muted);white-space:nowrap}
+.prog-bar{width:90px;height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .4s ease;width:0}
+.autosave-dot{width:7px;height:7px;border-radius:50%;background:var(--green);opacity:0;transition:opacity .3s;flex-shrink:0}
+.autosave-dot.show{opacity:1}
+
+/* ── MAIN ────────────────────────────────────────────── */
+.main{max-width:860px;margin:0 auto;padding:20px 16px 80px}
+
+/* ── STEP VISIBILITY ─────────────────────────────────── */
+#step1{display:block}
+#step2{display:none}
+#success-card{display:none}
+#abandon-screen{display:none}
+
+/* ── BANNER ──────────────────────────────────────────── */
+.banner{
+  background:linear-gradient(135deg,#1d4ed8,#0ea5e9);
+  border-radius:14px;padding:20px 22px;margin-bottom:20px;
+  display:flex;align-items:flex-start;gap:16px;
+}
+.banner-icon{width:48px;height:48px;background:#ffffff18;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.banner-title{font-size:17px;font-weight:700;color:#fff;margin-bottom:4px}
+.banner-sub{font-size:13px;color:#bfdbfe;line-height:1.55}
+.banner-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.banner-pill{background:#ffffff18;color:#dbeafe;font-size:11px;padding:3px 10px;border-radius:99px}
+
+/* ── INSTRUCTIONS BOX ────────────────────────────────── */
+.instruc-box{
+  background:#0c1a2e;border:1px solid #1e40af;border-radius:12px;
+  padding:14px 18px;margin-bottom:20px;
+}
+.instruc-box h3{font-size:12px;font-weight:700;color:var(--blue-ll);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.instruc-box ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.instruc-box li{font-size:12px;color:#93c5fd;line-height:1.5;padding-left:18px;position:relative}
+.instruc-box li::before{content:"→";position:absolute;left:0;color:#3b82f6}
+.instruc-box strong{color:#bfdbfe}
+
+/* ── SECTION CARD ────────────────────────────────────── */
+.section-card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;margin-bottom:16px;overflow:hidden;
+}
+.section-head{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px;border-bottom:1px solid var(--border);
+}
+.section-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.section-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue-ll)}
+.section-count{margin-left:auto;font-size:11px;color:var(--muted)}
+.section-body{padding:18px;display:flex;flex-direction:column;gap:20px}
+
+/* ── SUB-DIVIDER ─────────────────────────────────────── */
+.sub-divider{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 0;margin-bottom:4px;margin-top:8px;
+}
+.sub-divider:first-child{margin-top:0}
+.sub-divider-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap}
+.sub-divider-line{flex:1;height:1px;background:var(--border)}
+
+/* ── QUESTION ────────────────────────────────────────── */
+.q-block{padding:2px 0}
+.q-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.q-num{
+  width:26px;height:26px;border-radius:6px;
+  background:var(--deep);border:1px solid var(--border);
+  font-size:11px;font-weight:700;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.q-text{font-size:13px;font-weight:500;color:var(--text);line-height:1.55;flex:1;white-space:pre-line}
+.q-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:3px}
+.badge-dev{background:#1e3a5f;color:#93c5fd}
+.badge-tf{background:#2d1f63;color:#c4b5fd}
+.badge-radio{background:#1a3a2a;color:#6ee7b7}
+.badge-check{background:#3b1f1a;color:#fca5a5}
+.badge-draw{background:#3b2a00;color:#fcd34d}
+.badge-list{background:#1c2a1a;color:#86efac}
+
+/* ── PRACTICO CARD ───────────────────────────────────── */
+.practico-wrapper{
+  background:var(--practico-bg);
+  border:2px solid var(--practico-border);
+  border-radius:12px;padding:16px;
+  position:relative;overflow:hidden;
+}
+.practico-wrapper::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#92400e,#f59e0b,#92400e);
+}
+.practico-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#92400e;color:#fde68a;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  padding:4px 12px;border-radius:6px;margin-bottom:12px;
+}
+.practico-title{font-size:13px;font-weight:700;color:var(--practico-text);margin-bottom:10px}
+.practico-70{
+  display:inline-flex;align-items:center;gap:5px;
+  background:#78350f;color:#fde68a;font-size:11px;font-weight:600;
+  padding:3px 10px;border-radius:5px;margin-left:8px;vertical-align:middle;
+}
+
+/* ── CASO BOX ────────────────────────────────────────── */
+.caso-box{
+  background:#1c1800;border:1px solid #78350f;
+  border-radius:10px;padding:14px 16px;margin-bottom:12px;
+  font-size:12px;color:#fcd34d;line-height:1.65;
+}
+.caso-box strong{color:#fde68a}
+.caso-box ul{margin-left:16px;margin-top:6px}
+.caso-box li{margin-bottom:3px}
+
+/* ── INPUTS ──────────────────────────────────────────── */
+textarea,input[type=text],input[type=email]{
+  width:100%;background:var(--deep);
+  border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:Inter,sans-serif;font-size:13px;
+  padding:10px 12px;resize:vertical;
+  transition:border-color .15s;outline:none;
+}
+textarea:focus,input[type=text]:focus,input[type=email]:focus{border-color:var(--blue)}
+textarea{line-height:1.55;min-height:80px}
+input[type=text],input[type=email]{height:38px;resize:none}
+
+/* ── OPTIONS (radio/check) — COLUMN LAYOUT ───────────── */
+.tf-group,.radio-group,.check-group{display:flex;flex-direction:column;gap:6px}
+.opt-label{
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  background:var(--deep);border:1px solid var(--border);border-radius:8px;
+  padding:9px 14px;font-size:13px;transition:all .15s;user-select:none;
+}
+.opt-label:hover{border-color:var(--border2)}
+.opt-label input[type=radio],.opt-label input[type=checkbox]{
+  width:15px;height:15px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;
+}
+.opt-label.selected{border-color:var(--blue);background:#1e3a5f}
+
+/* ── DATOS GRID ──────────────────────────────────────── */
+.datos-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.datos-grid{grid-template-columns:1fr}}
+.field-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.field-label span.req{color:var(--red)}
+
+/* ── DECLARACION ─────────────────────────────────────── */
+.decl-box{
+  background:#180a0a;border:1px solid #7f1d1d;border-radius:10px;
+  padding:14px 16px;margin-top:16px;
+}
+.decl-text{font-size:12px;color:#fca5a5;line-height:1.6;margin-bottom:12px}
+.decl-check-label{
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  font-size:13px;color:#fca5a5;font-weight:500;padding:8px;
+  border-radius:6px;border:1px solid transparent;transition:all .15s;
+}
+.decl-check-label:hover{border-color:#7f1d1d;background:#1c0a0a}
+.decl-check-label.selected{border-color:var(--red);background:#1c0a0a}
+.decl-check-label input{width:15px;height:15px;accent-color:var(--red);flex-shrink:0}
+
+/* ── ABANDON SCREEN ──────────────────────────────────── */
+#abandon-screen{
+  background:#1c0606;border:2px solid var(--red);border-radius:12px;
+  padding:28px 24px;text-align:center;margin-top:16px;
+}
+.abandon-title{font-size:16px;font-weight:700;color:#fca5a5;margin-bottom:8px}
+.abandon-sub{font-size:13px;color:#f87171;margin-bottom:20px;line-height:1.5}
+.btn-abandon{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--red);color:#fff;border:none;border-radius:8px;
+  font-size:13px;font-weight:700;padding:10px 22px;cursor:pointer;
+  transition:all .15s;text-transform:uppercase;letter-spacing:.05em;
+}
+.btn-abandon:hover{background:#b91c1c;transform:scale(1.02)}
+
+/* ── RETOMAR SESSION ─────────────────────────────────── */
+.retomar-box{
+  background:#0c1a2e;border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;margin-top:16px;
+}
+.retomar-toggle{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  font-size:12px;color:var(--muted);background:none;border:none;padding:0;
+  transition:color .15s;
+}
+.retomar-toggle:hover{color:var(--text)}
+.retomar-fields{display:none;margin-top:12px}
+.retomar-row{display:flex;gap:8px;margin-top:10px}
+.btn-retomar{
+  flex-shrink:0;background:var(--blue);color:#fff;border:none;border-radius:7px;
+  font-size:12px;font-weight:600;padding:0 14px;cursor:pointer;transition:all .15s;
+  white-space:nowrap;
+}
+.btn-retomar:hover{background:var(--blue-l)}
+
+/* ── INICIAR EXAMEN ──────────────────────────────────── */
+.btn-iniciar{
+  width:100%;padding:14px;font-size:15px;font-weight:700;
+  background:linear-gradient(135deg,#059669,#0d9488);
+  color:#fff;border:none;border-radius:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 4px 20px #05966940;transition:all .15s;margin-top:16px;
+}
+.btn-iniciar:hover{transform:translateY(-1px);box-shadow:0 6px 24px #05966960}
+.btn-iniciar:active{transform:scale(.98)}
+.btn-iniciar:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── SECTION NAV ─────────────────────────────────────── */
+.section-nav{
+  display:flex;flex-wrap:wrap;gap:6px;
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:12px;margin-bottom:16px;
+}
+.snav-btn{
+  font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;
+  background:var(--deep);border:1px solid var(--border);color:var(--muted);
+  transition:all .15s;white-space:nowrap;
+}
+.snav-btn:hover{border-color:var(--border2);color:var(--text)}
+
+/* ── LIST TABLE (Enliste y desarrolle) ───────────────── */
+.list-table{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.lt-header{
+  display:grid;grid-template-columns:32px 1fr auto 32px;gap:0;
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--muted);
+}
+.lt-header .lth-dev{text-align:center}
+.lt-rows{display:flex;flex-direction:column}
+.lt-row{border-bottom:1px solid var(--border)}
+.lt-row:last-child{border-bottom:none}
+.lt-row-head{
+  display:grid;grid-template-columns:32px 1fr auto 32px;
+  align-items:center;gap:0;padding:6px 8px;background:var(--deep);
+}
+.lt-row-num{
+  width:24px;height:24px;border-radius:5px;background:var(--panel);
+  border:1px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.lt-title-input{
+  height:32px;border-radius:6px;font-size:12px;margin:0 6px;
+  min-height:auto;resize:none;border-color:transparent;background:var(--card);
+}
+.lt-title-input:focus{border-color:var(--blue)}
+.lt-title-input[readonly]{color:var(--blue-ll);font-weight:600;background:transparent;cursor:default}
+.lt-dev-toggle{
+  display:flex;align-items:center;gap:5px;white-space:nowrap;
+  background:var(--panel);border:1px solid var(--border);border-radius:6px;
+  color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer;transition:all .15s;
+}
+.lt-dev-toggle:hover{border-color:var(--border2);color:var(--text)}
+.lt-dev-toggle.open{border-color:var(--green);color:var(--green);background:#052e1620}
+.lt-dev-toggle .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:none}
+.lt-dev-toggle.has-content .dot{display:block}
+.lt-remove-btn{
+  width:24px;height:24px;border-radius:5px;background:transparent;
+  border:1px solid transparent;color:var(--muted);font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+  flex-shrink:0;
+}
+.lt-remove-btn:hover{border-color:var(--red);color:var(--red);background:#1c060620}
+.lt-dev-area{display:none;padding:6px 8px 8px;background:var(--panel);border-top:1px solid var(--border)}
+.lt-dev-area textarea{min-height:70px;font-size:12px}
+.lt-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:var(--card);border-top:1px solid var(--border);
+}
+.lt-add-btn{
+  display:flex;align-items:center;gap:6px;
+  background:transparent;border:1px solid var(--border);border-radius:7px;
+  color:var(--muted);font-size:12px;padding:5px 12px;cursor:pointer;transition:all .15s;
+}
+.lt-add-btn:hover{border-color:var(--green);color:var(--green);background:#05966910}
+.lt-hint{font-size:10px;color:var(--muted)}
+
+/* ── ATTACH TOGGLE ───────────────────────────────────── */
+.attach-toggle{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--deep);border:1px solid var(--border);border-radius:6px;
+  color:var(--muted);font-size:11px;padding:4px 10px;cursor:pointer;
+  transition:all .15s;margin-top:8px;
+}
+.attach-toggle:hover{border-color:var(--border2);color:var(--text)}
+.attach-panel{display:none;margin-top:8px}
+
+/* ── IMAGE UPLOAD ────────────────────────────────────── */
+.img-upload-area{
+  border:2px dashed var(--border);border-radius:8px;
+  padding:16px;text-align:center;cursor:pointer;transition:all .15s;
+  position:relative;overflow:hidden;
+}
+.img-upload-area:hover{border-color:var(--blue);background:#1e3a5f18}
+.img-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-upload-area p{font-size:12px;color:var(--muted);pointer-events:none}
+.img-preview{display:none;position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.img-preview img{max-width:100%;display:block}
+.img-remove{position:absolute;top:6px;right:6px;background:#dc262699;color:#fff;border:none;border-radius:5px;font-size:11px;padding:3px 8px;cursor:pointer}
+
+/* ── DRAW WIDGET ─────────────────────────────────────── */
+.draw-widget{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.draw-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--card);padding:8px 10px;border-bottom:1px solid var(--border)}
+.draw-btn{background:var(--deep);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
+.draw-btn:hover{border-color:var(--border2);color:var(--text)}
+.draw-btn.active{border-color:var(--blue);color:var(--blue-l);background:#1e3a5f}
+.color-dot{width:16px;height:16px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:border-color .15s}
+.color-dot.active{border-color:var(--text)}
+.size-select{background:var(--deep);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px;cursor:pointer}
+canvas.draw-canvas{display:block;background:#fff;width:100%;cursor:crosshair;touch-action:none}
+
+/* ── SUBMIT ──────────────────────────────────────────── */
+.submit-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.btn-submit{
+  width:100%;padding:13px;font-size:15px;font-weight:700;
+  background:linear-gradient(135deg,#1d4ed8,#0ea5e9);
+  color:#fff;border:none;border-radius:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 4px 20px #1d4ed840;transition:all .15s;
+}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 24px #1d4ed860}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.error-box{background:#1c0606;border:1px solid var(--red);border-radius:8px;padding:10px 14px;font-size:12px;color:#fca5a5;display:none;margin-bottom:12px}
+
+/* ── SUCCESS CARD ────────────────────────────────────── */
+#success-card{background:#041c0e;border:1px solid #15803d;border-radius:14px;padding:32px 24px;text-align:center}
+.success-icon{width:64px;height:64px;background:#052e16;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;color:#22c55e;margin:0 auto 16px}
+
+/* ── SCROLL TOP ──────────────────────────────────────── */
+#scroll-top{position:fixed;bottom:20px;right:20px;width:36px;height:36px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;box-shadow:0 4px 12px #3b82f640}
+#scroll-top:hover{background:var(--blue-l)}
+
+/* ── DIVIDER ─────────────────────────────────────────── */
+hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
+
+@media(max-width:600px){
+  .lt-header{display:none}
+  .lt-row-head{grid-template-columns:24px 1fr 32px;gap:4px}
+  .lt-dev-toggle{display:none}
+  .lt-dev-area{display:block!important}
+  .topbar-right .prog-wrap{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-info">
+    <div class="topbar-label">Recuperatorio · AyRPC 2025</div>
+    <div class="topbar-title">Armado y Reparación de PC</div>
+  </div>
+  <div class="topbar-right">
+    <div class="autosave-dot" id="autosave-dot" title="Guardado automáticamente"></div>
+    <div class="timer-wrap">
+      <span class="timer-label">Tiempo</span>
+      <span class="timer-val" id="timer-val">Sin iniciar</span>
+    </div>
+    <div class="prog-wrap">
+      <span class="prog-label" id="prog-label">0 / 106</span>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+  </div>
+</header>
+
+<div class="main" id="main">
+
+<!-- ══════════════════════════════════════════════════════
+     PASO 1: DATOS + DECLARACIÓN
+══════════════════════════════════════════════════════ -->
+<div id="step1">
+
+  <div class="banner">
+    <div class="banner-icon"><i class="fa-solid fa-computer"></i></div>
+    <div>
+      <div class="banner-title">Examen Recuperatorio — AyRPC 2025</div>
+      <div class="banner-sub">Formulario oficial de recuperatorio. Respondé con tus propias palabras. Este examen está sujeto a filtro de IA.</div>
+      <div class="banner-pills">
+        <span class="banner-pill"><i class="fa-solid fa-clock"></i> 48 horas para completarlo</span>
+        <span class="banner-pill"><i class="fa-solid fa-layer-group"></i> 7 clases · 106 preguntas</span>
+        <span class="banner-pill"><i class="fa-solid fa-floppy-disk"></i> Guardado automático</span>
+        <span class="banner-pill"><i class="fa-solid fa-mobile-screen"></i> Compatible con todos los dispositivos</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="instruc-box">
+    <h3><i class="fa-solid fa-circle-info"></i> Instrucciones importantes</h3>
+    <ul>
+      <li>Una vez que presionés <strong>"INICIAR EXAMEN"</strong>, el contador de <strong>48 horas</strong> comenzará y no se detendrá por nada.</li>
+      <li>El examen se guarda automáticamente cada 30 segundos. Podés cerrar el navegador y retomarlo desde cualquier dispositivo.</li>
+      <li>Para retomar desde otro dispositivo, usá el mismo enlace e ingresá tu <strong>correo electrónico y DNI</strong>.</li>
+      <li>Los <strong>ejercicios prácticos</strong> representan el <strong>70% de la nota de aprobación</strong>. Prestalos especial atención.</li>
+      <li>Este examen es un modelo de recuperatorio del formulario original habilitado a fines de febrero y finalizado el 2 de marzo de 2026.</li>
+      <li>Se realizará un <strong>filtro exhaustivo</strong> de respuestas para detectar uso de IA. Usá tus propias palabras en todos los desarrollos.</li>
+    </ul>
+  </div>
+
+  <!-- Datos del alumno -->
+  <div class="section-card" id="sec-datos">
+    <div class="section-head">
+      <div class="section-icon" style="background:#1e3a5f;color:#93c5fd"><i class="fa-solid fa-user"></i></div>
+      <div class="section-name">Datos del Alumno</div>
+    </div>
+    <div class="section-body">
+      <div class="datos-grid">
+        <div>
+          <div class="field-label">Nombre y Apellido <span class="req">*</span></div>
+          <input type="text" id="f-nombre" placeholder="Ej: Juan Pérez" autocomplete="name">
+        </div>
+        <div>
+          <div class="field-label">DNI <span class="req">*</span></div>
+          <input type="text" id="f-dni" placeholder="Sin puntos ni espacios" inputmode="numeric">
+        </div>
+        <div>
+          <div class="field-label">Correo electrónico <span class="req">*</span></div>
+          <input type="email" id="f-email" placeholder="tu@correo.com" autocomplete="email">
+        </div>
+        <div>
+          <div class="field-label">Usuario de Twitch</div>
+          <input type="text" id="f-twitch" placeholder="sin el @">
+        </div>
+      </div>
+
+      <!-- Declaración jurada -->
+      <div class="decl-box">
+        <div class="decl-text">
+          Declaro en este formulario haber participado y/o recuperado la totalidad de las clases del curso.
+          Acepto las reglas del mismo, alegando que no haré uso de contenido externo al curso como
+          inteligencia artificial o búsquedas en internet que no se hayan dictado durante las 7 clases.
+          Entiendo que las respuestas serán analizadas con filtros de detección de IA.
+          <strong style="color:#f87171"> Quedo avisado/a.</strong>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label class="decl-check-label" id="lbl-acepto" onclick="onDeclChange('acepto')">
+            <input type="radio" name="f-decl" id="f-decl-acepto" value="Acepto">
+            <span>Acepto los términos y condiciones del recuperatorio</span>
+          </label>
+          <label class="decl-check-label" id="lbl-no" onclick="onDeclChange('no')">
+            <input type="radio" name="f-decl" id="f-decl-no" value="No acepto">
+            <span>No acepto</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Pantalla de abandono -->
+      <div id="abandon-screen">
+        <div class="abandon-title"><i class="fa-solid fa-ban"></i> No podés continuar</div>
+        <div class="abandon-sub">
+          Al no aceptar los términos de la declaración jurada, no es posible acceder al examen recuperatorio.<br>
+          Si cambiaste de opinión, seleccioná "Acepto" arriba.
+        </div>
+        <button class="btn-abandon" onclick="abandonar()">
+          <i class="fa-solid fa-door-open"></i> ABANDONAR OPORTUNIDAD
+        </button>
+      </div>
+
+      <div id="err-datos" class="error-box"></div>
+
+      <button class="btn-iniciar" id="btn-iniciar" onclick="iniciarExamen()">
+        <i class="fa-solid fa-play"></i> INICIAR EXAMEN
+      </button>
+
+      <!-- Retomar sesión -->
+      <div class="retomar-box">
+        <button class="retomar-toggle" onclick="toggleRetomar()">
+          <i class="fa-solid fa-rotate-right"></i>
+          ¿Ya iniciaste el examen en otro dispositivo? Recuperar sesión
+          <i class="fa-solid fa-chevron-down" id="retomar-chevron" style="font-size:10px;margin-left:auto"></i>
+        </button>
+        <div class="retomar-fields" id="retomar-fields">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Ingresá los mismos datos con los que iniciaste el examen para recuperar tu progreso.</p>
+          <div class="datos-grid">
+            <div>
+              <div class="field-label">Correo electrónico</div>
+              <input type="email" id="r-email" placeholder="tu@correo.com">
+            </div>
+            <div>
+              <div class="field-label">DNI</div>
+              <input type="text" id="r-dni" placeholder="Sin puntos">
+            </div>
+          </div>
+          <div class="retomar-row">
+            <button class="btn-retomar" onclick="retomarSesion()">
+              <i class="fa-solid fa-magnifying-glass"></i> Buscar mi sesión
+            </button>
+            <span id="retomar-msg" style="font-size:12px;color:var(--muted);align-self:center;margin-left:8px"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /step1 -->
+
+<!-- ══════════════════════════════════════════════════════
+     PASO 2: FORMULARIO DE EXAMEN
+══════════════════════════════════════════════════════ -->
+<div id="step2">
+  <div class="section-nav" id="section-nav"></div>
+  <div id="questions-root"></div>
+
+  <div class="submit-card" id="submit-section">
+    <div class="error-box" id="err-submit"></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;text-align:center">
+      Al enviar, se descargará un archivo CSV con tus respuestas. Enviáselo al docente por el medio indicado.
+    </p>
+    <button class="btn-submit" id="btn-submit" onclick="submitExamen()">
+      <i class="fa-solid fa-paper-plane"></i> Enviar recuperatorio
+    </button>
+  </div>
+</div><!-- /step2 -->
+
+<!-- SUCCESS -->
+<div id="success-card">
+  <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+  <div style="font-size:18px;font-weight:700;color:#22c55e;margin-bottom:8px">¡Recuperatorio enviado!</div>
+  <div style="font-size:13px;color:#86efac;margin-bottom:6px">Tus respuestas fueron registradas correctamente.</div>
+  <div style="font-size:12px;color:#4ade80;margin-bottom:20px">El docente ya tiene acceso a tu examen. Podés cerrar esta ventana.</div>
+</div>
+
+</div><!-- /main -->
+
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <i class="fa-solid fa-chevron-up"></i>
+</button>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CONFIG — completar antes de publicar
+// ════════════════════════════════════════════════════════
+const GAS_URL      = '';       // ← URL del Google Apps Script web app (doPost)
+const SUPABASE_URL = 'https://vdgujwtyqyhudrieodjj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_c3y7VhdedYe_xZ2jSuG1Sw_hyzqpzWg';
+const EXAM_DURATION_MS = 48 * 60 * 60 * 1000;   // 48 horas
+const AUTOSAVE_MS      = 30 * 1000;              // 30 segundos
+const SESSION_KEY      = 'recuperatorio_ayrpc_v1';
+const TZ               = 'America/Argentina/Buenos_Aires';
+
+const sb = (SUPABASE_URL && SUPABASE_KEY)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
+
+// ════════════════════════════════════════════════════════
+//  QUESTION DATA
+// ════════════════════════════════════════════════════════
+const SECTIONS = [
+{
+  id:'c1', sname:'Clase 1 — Armado y Componentes', icon:'fa-computer',
+  color:'#7c3aed', bg:'#2e1065',
+  qs:[
+    {n:1,  sub:'Hardware · Computadoras', t:'¿Qué es una computadora?', type:'dev'},
+    {n:2,  sub:'Hardware · Computadoras', t:'Enliste y desarrolle 8 tipos de computadoras conocidos según su aplicación.', type:'list', minItems:8},
+    {n:3,  sub:'Hardware · Computadoras', t:'Mencione formatos y sus diferencias según el uso.', type:'dev'},
+    {n:4,  sub:'Hardware · Computadoras', t:'Enliste la mayor cantidad de periféricos que conozca para una PC de escritorio (mínimo 5).', type:'dev'},
+    {n:5,  sub:'Hardware · Computadoras', t:'Enliste el hardware interno básico y esencial de una PC de escritorio. Desarrolle cada componente.', type:'list', minItems:6},
+    {n:6,  sub:'Hardware · Computadoras', t:'Desarrolle las diferencias entre una computadora de escritorio y una portátil.', type:'dev'},
+    {n:7,  sub:'Hardware · Computadoras', t:'Enliste de mayor a menor los tamaños de gabinetes/torres. De igual forma, los tamaños de placas madre (incluir Nano, Pico, etc.).', type:'list', minItems:8},
+    {n:8,  sub:'CPU', t:'¿Cuál es la función de los VRM?', type:'radio', opts:['Proteger y regular la energía que recibe el Procesador','Estética','Guardar Caché','Memoria volátil']},
+    {n:9,  sub:'CPU', t:'Describa, con sus propias palabras, qué es y cómo funciona el CPU.', type:'dev'},
+    {n:10, sub:'CPU', t:'Describa "núcleos" e "hilos".', type:'dev'},
+    {n:11, sub:'CPU', t:'¿Qué relación tiene el CPU con la memoria RAM?', type:'radio', opts:['Accede a la memoria volátil para procesar los datos en tiempo real','Actualiza BIOS','Comparten voltaje','Hace que el sistema operativo sea fácil de instalar']},
+    {n:12, sub:'CPU', t:'¿Qué es una NPU? Mencione sus funciones principales.', type:'dev'},
+    {n:13, sub:'Memoria RAM', t:'Enliste y desarrolle tamaños, diferencias y características de las memorias RAM.', type:'list', minItems:5},
+    {n:14, sub:'Memoria RAM', t:'¿Qué es Dual Channel y cómo se configura? ¿Y el Quad Channel?', type:'dev'},
+    {n:15, sub:'Memoria RAM', t:'¿Qué pasa si tengo una RAM de 3200 MHz y otra de 2666 MHz instaladas en la misma computadora?', type:'radio', opts:['Se baja la de 3200 a 2666','Se sube la de 2666 a 3200','Se estabilizan ambas a un promedio común','Oh my Piciii, Oh my Piciiii!!!']},
+    {n:16, sub:'Almacenamiento', t:'HDD (3.5/2.5). ¿Se puede desfragmentar?', type:'dev'},
+    {n:17, sub:'Almacenamiento', t:'SSD (2.5 / M.2 / NVMe / PCIe / U.2). ¿Se puede desfragmentar?', type:'dev'},
+    {n:18, sub:'Almacenamiento', t:'SATA — describí el estándar, versiones y características.', type:'dev'},
+    {n:19, sub:'Almacenamiento', t:'IDE/PATA — describí el estándar y sus diferencias con SATA.', type:'dev'},
+    {n:20, sub:'Fuentes de Poder', t:'Enliste y ordene de menor a mayor las certificaciones en fuentes de poder.', type:'list', minItems:7},
+    {n:21, sub:'Fuentes de Poder', t:'¿Qué criterio utiliza para elegir la fuente justa en un armado?', type:'check', opts:['Suma del consumo total de todos los componentes + 100w','Conexiones eléctricas (Si hay cable a tierra)','Uso de estabilizadores','Humedad','Si tiene RGB (lucesitas de colores)','Que sea NOGANET']},
+    {n:22, sub:'Fuentes de Poder', t:'Mencione tipos de fuentes (modular, semi-modular, no modular, etc.).', type:'dev'},
+    {n:23, sub:'Refrigeración y Ensamble', t:'Indique las diferencias entre las 3 formas de refrigeración.', type:'dev'},
+    {n:24, sub:'Refrigeración y Ensamble', t:'Desarrolle el ensamble correcto y recomendado de una computadora de escritorio.', type:'dev', attach:true},
+    {n:25, sub:'Ejercicio Práctico', practico:true, practicoN:1,
+      caso:`<strong>Situación:</strong> En un negocio adquirieron una PC componente por componente. Al ensamblarla, <em>enciende, no da señal de video y se apaga a los 5 segundos</em>, entrando en bucle de reinicios.<br><br><strong>Componentes:</strong><ul><li>Placa madre: Gigabyte H110M-H rev. 1.3</li><li>RAM: 2×4 GB DIMM 2666 MHz</li><li>Procesador: Intel Core i5-10400F LGA 1200 (Comet Lake) + cooler stock</li><li>Fuente: genérica 430 W</li><li>Combo teclado + mouse Genius</li><li>HDD: 500 GB Seagate SATA</li><li>Monitor: Samsung SyncMaster 633SN</li></ul><br>Las conexiones están en condiciones. El monitor funciona en otro dispositivo.`,
+      t:'Indique mínimo 2 posibles diagnósticos y sus soluciones.', type:'dev'},
+  ]
+},
+{
+  id:'c2', sname:'Clase 2 — Sistemas Operativos', icon:'fa-brands fa-windows',
+  color:'#2563eb', bg:'#1e3a5f',
+  qs:[
+    {n:26, sub:'Sistemas Operativos', t:'¿Qué es un sistema operativo (SO)?', type:'dev'},
+    {n:27, sub:'Sistemas Operativos', t:'¿Una BIOS se considera un sistema operativo?', type:'tf'},
+    {n:28, sub:'Sistemas Operativos', t:'Enliste y describa los sistemas operativos más comunes y también algunos menos conocidos, indicando en qué casos se utiliza cada uno.', type:'list', minItems:4},
+    {n:29, sub:'Sistemas Operativos', t:'Indique con qué y cómo se instalan sistemas operativos en distintos dispositivos.', type:'dev'},
+    {n:30, sub:'Sistemas Operativos', t:'En computadoras antiguas, cuando no bootea por USB por más cambios que se hagan en BIOS y en el sistema de archivos del booteable, ¿qué se hace?', type:'dev'},
+    {n:31, sub:'Sistemas Operativos', t:'Describa compatibilidad para sistemas operativos (x86 / x64).', type:'dev'},
+    {n:32, sub:'Sistemas Operativos', t:'Describa "boot" y "booteable".', type:'dev'},
+    {n:33, sub:'Sistemas Operativos', t:'Indique software para crear booteables.', type:'check', opts:['Rufus','Ventoy','Yumi','Etcher','Unebootin','Media Creation Tool','Sardu','Rubén','Croma','Crotolamo','Svakom','Lovense','Satisfyer','VixSkin']},
+    {n:34, sub:'Sistemas Operativos', t:'¿Cuántos SO te permite Rufus meter en un booteable? ¿Qué alertas salen al presionar "Empezar"?', type:'dev'},
+    {n:35, sub:'Sistemas Operativos', t:'¿Con qué software se crea Batocera?', type:'dev'},
+    {n:36, sub:'Sistemas Operativos', t:'¿Qué esquema de partición se utiliza para BIOS Legacy?', type:'check', opts:['MBR','GPT','GPT (Comp-CSM)','TPG']},
+    {n:37, sub:'Sistemas Operativos', t:'¿Qué sucede cuando un booteable fue creado con un esquema de partición incorrecto en Rufus?', type:'check', opts:['No lo detecta','Sale un error de RUFUS al inicializarlo que hay que cambiarlo','Agarra igual','Te sugiere linux','BSOD','Se quema la pila CR2032']},
+    {n:38, sub:'Sistemas Operativos', t:'Enliste y compare todas las diferencias clave entre MBR y GPT.', type:'list', minItems:5},
+    {n:39, sub:'Sistemas Operativos', t:'¿Cómo se cambia de MBR a GPT y viceversa? Enliste comandos para Windows: qué hacen y cómo se llega a ellos en medio de una instalación.', type:'list', minItems:4},
+    {n:40, sub:'Sistemas Operativos', t:'¿En qué consisten las máquinas virtuales y para qué las utilizamos?', type:'dev'},
+    {n:41, sub:'Sistemas Operativos', t:'Mencione errores comunes en la instalación de SO y cómo corregirlos (mínimo 4).', type:'dev'},
+    {n:42, sub:'Sistemas Operativos', t:'Si Secure Boot no te deja cambiar opciones, ¿a qué se debe?', type:'check', opts:['Compatibilidad CSM','Clave de administración','Vida útil de la pila CR2032','Teclado desenchufado','USB conectado']},
+    {n:43, sub:'Sistemas Operativos', t:'¿Cómo se crea la carpeta Windows.old? ¿Para qué sirve y cómo se elimina?', type:'dev'},
+    {n:44, sub:'Ejercicio Práctico', practico:true, practicoN:2,
+      caso:`<strong>Situación:</strong> El hijo de doña Roberta le instaló <em>Windows 11</em> a su notebook <em>Toshiba Satellite L655-S5155</em>. Tiene un SSD ADATA de 128 GB con un máximo de 600 MB/s. Claramente el rendimiento no es óptimo y presenta muchos errores y apagones inesperados.`,
+      t:'Detalle paso a paso cómo lo resolvería.', type:'dev'},
+  ]
+},
+{
+  id:'c3', sname:'Clase 3 — BIOS', icon:'fa-circuit-board',
+  color:'#0891b2', bg:'#082f49',
+  qs:[
+    {n:45, sub:'BIOS', t:'¿Qué es la BIOS?\na) ¿Se puede acceder a ella sin tener un SO instalado?\nb) ¿Cómo se accede? (teclas de acceso)', type:'dev'},
+    {n:46, sub:'BIOS', t:'Enliste y describa 8 diferencias entre BIOS Legacy y UEFI.\na) ¿La BIOS Legacy tiene Secure Boot?', type:'list', minItems:8},
+    {n:47, sub:'BIOS', t:'¿Qué es Secure Boot y cuál es su función?', type:'dev'},
+    {n:48, sub:'BIOS', t:'¿Dónde se aloja una BIOS? Indique los tipos de chips existentes.\nb) ¿Cuál es el más utilizado en placas modernas y por qué?', type:'dev'},
+    {n:49, sub:'BIOS', t:'Basado en la respuesta anterior, dibujá cómo identificar las conexiones de un chip SPI de 8 patas.', type:'draw'},
+    {n:50, sub:'BIOS', t:'¿Cómo se utiliza el programador CH341A?', type:'dev'},
+    {n:51, sub:'BIOS', t:'¿Qué debo hacer si no reconoce el chip?', type:'dev'},
+    {n:52, sub:'BIOS', t:'¿Qué te indica el cable rojo de la pinza?', type:'radio', opts:['Orienta la pinza en la pata 1','Decorado','Orienta la pinza en la pata 8','Nada']},
+    {n:53, sub:'BIOS', t:'¿En qué casos utilizarías el programador?', type:'dev'},
+    {n:54, sub:'BIOS', t:'¿Cuándo se utiliza un adaptador?', type:'radio', opts:['Cuando el chip a programar es de 1.8v','Cuando el chip se quemó','Cuando hay baja tensión general','Cuando el que programó el chip se identifica como therian']},
+    {n:55, sub:'BIOS', t:'¿Qué aparece en pantalla al leer un chip vacío en el software Programmer?', type:'radio', opts:['FF y/o 00','Un nyan cat','Símbolos, números y letras','El among us hecho de caracteres ASCII']},
+    {n:56, sub:'BIOS', t:'Enliste y desarrolle las formas de actualizar BIOS.', type:'list', minItems:3},
+    {n:57, sub:'BIOS', t:'¿Qué es y para qué sirve la pila CR2032 en relación a la BIOS?', type:'dev'},
+    {n:58, sub:'BIOS', t:'¿Cómo se le daba orden de arranque con jumper en máquinas antiguas?', type:'dev'},
+    {n:59, sub:'Ejercicio Práctico', practico:true, practicoN:3,
+      caso:`<strong>Situación:</strong> Un vecino adquirió un <em>AMD Ryzen serie 9000</em> que salió dos años después que su placa madre <em>B650 AORUS ELITE AX Rev. 1.1</em>. Al ensamblar todo correctamente, la máquina enciende, no se apaga, pero <em>no emite señal de video</em>.`,
+      t:'Indique el diagnóstico y la solución.', type:'dev'},
+  ]
+},
+{
+  id:'c4', sname:'Clase 4 — Drivers y Software', icon:'fa-gears',
+  color:'#16a34a', bg:'#052e16',
+  qs:[
+    {n:60, sub:'Drivers', t:'¿Qué es un driver?', type:'dev'},
+    {n:61, sub:'Drivers', t:'¿Qué es PnP (Plug and Play)?', type:'radio', opts:['Plug & Play (conecto y uso)','Plug & Penalty','Papá no pagó','Porque no pasa']},
+    {n:62, sub:'Drivers', t:'¿Qué sucede cuando instalamos un sistema operativo sin drivers?', type:'radio', opts:['Hay funciones que no están disponibles como la config de video, conexión a internet...','Office anda lento','Aparece una pelea de enanos en youtube constantemente','Se enciende solo Bluetooth','Los periféricos funcionan a medias']},
+    {n:63, sub:'Drivers', t:'¿Qué debemos tener en cuenta a la hora de buscar drivers?', type:'check', opts:['Compatibilidad con el sistema operativo','El hardware sea el correcto','La fecha de vencimiento']},
+    {n:64, sub:'Drivers', t:'¿Qué herramienta utiliza en Windows para ver sus componentes?', type:'radio', opts:['msinfo32','msconfig','dxdiag','msched']},
+    {n:65, sub:'Drivers', t:'¿Cómo localizamos si algún componente o dispositivo tiene problemas con su driver?', type:'dev'},
+    {n:66, sub:'Drivers', t:'Aunque el dispositivo emita señal de video y esté operativo, ¿qué sucede con los dispositivos de video al instalar un SO?', type:'dev'},
+    {n:67, sub:'Drivers', t:'Enliste y desarrolle el orden de prioridades en la búsqueda e instalación de drivers.', type:'list', minItems:4},
+    {n:68, sub:'Software de Mantenimiento', t:'Desarrolle cada uno de los softwares de mantenimiento externos a Windows.', type:'dev'},
+    {n:69, sub:'Software de Mantenimiento', t:"Describa y desarrolle el uso del sistema booteable Hiren's.", type:'dev'},
+    {n:70, sub:'Software de Mantenimiento', t:'Mencione y describa herramientas que trae Windows.', type:'dev'},
+    {n:71, sub:'Software de Mantenimiento', t:'¿Qué es WinDebloat?', type:'dev'},
+    {n:72, sub:'Software de Mantenimiento', t:'Describa los siguientes comandos/herramientas:', type:'list_prefilled',
+      prefill:['sfc /scannow','DISM','chkdsk','defrag','diskpart','msconfig','regedit','eventvwr','perfmon','services.msc','taskmgr']},
+    {n:73, sub:'Ejercicio Práctico', practico:true, practicoN:4,
+      caso:`<strong>Situación:</strong> Te llega una notebook gamer de alta gama con un <em>NVMe de 4 TB</em>, sin sistema operativo. Al intentar instalar cualquier SO, <em>no aparece el NVMe en la lista de almacenamientos</em>. En la UEFI BIOS sí figura correctamente.`,
+      t:'Indicá paso a paso cómo resolverlo e instalar Windows 11 en el NVMe.', type:'dev'},
+  ]
+},
+{
+  id:'c5', sname:'Clase 5 — Microsoldaduras', icon:'fa-fire-flame-curved',
+  color:'#dc2626', bg:'#1c0606',
+  qs:[
+    {n:74, sub:'Microsoldadura', t:'¿Qué es una microsoldadura?', type:'dev'},
+    {n:75, sub:'Microsoldadura', t:'Enliste los tipos y características de cada método.', type:'list', minItems:4},
+    {n:76, sub:'Microsoldadura', t:'¿Cuáles son los métodos menos convencionales?', type:'check', opts:['Pre-horning','Láser','Ultrasónica','Wire bonding','THT','SMT','Reballing','Reflow']},
+    {n:77, sub:'Microsoldadura', t:'Describa qué es una placa PCB y los distintos tipos.', type:'dev'},
+    {n:78, sub:'Microsoldadura', t:'Seleccione elementos que utilizamos con técnicas de microsoldadura y describa su mantenimiento:', type:'check', opts:['Cautín','Estación de soldado','Microscopio','Multímetro','Flux','Estaño','Malla de cobre','Pistón desoldador','Pinzas "bruselas"','Cinta Kapton','Cinta de aluminio','Alcohol isopropílico','Aerosol detector de fallas','Batea ultrasónica (US)','Fuente regulada','Osciloscopio','Capacímetro','Stencil','Resina blanca','Paño','Cutter','Pendrive','Opción 21','Aca no supe que poner, lo siento']},
+
+    {n:79, sub:'Microsoldadura', t:'Enliste y desarrolle los tipos de estaño.', type:'list', minItems:3},
+    {n:80, sub:'Microsoldadura', t:'Detalle limpieza "high cost" y "low cost".', type:'dev'},
+    {n:81, sub:'Microsoldadura', t:'Desarrolle métodos de detección de fallas en microelectrónica.', type:'dev'},
+    {n:82, sub:'Ejercicio Práctico', practico:true, practicoN:5,
+      caso:`<strong>Situación:</strong> Usted acaba de ser contratado por la empresa <em>Littlenet (Argentina)</em>. Su jefe le solicita extraer un <em>IC de 8 patas</em> ubicado próximo al conector LCD de una placa madre de notebook, y reemplazarlo por uno equivalente obtenido de placas donantes.<br><br><em>La placa, una vez reparada, debe quedar apta para ensamblar. El IC ya fue indicado por el jefe.</em>`,
+      t:'Describí el proceso completo: cómo removés el componente, qué elementos usás y qué medidas de seguridad tomás.', type:'dev', attach:true},
+  ]
+},
+{
+  id:'c6', sname:'Clase 6 — Solución de Problemas', icon:'fa-triangle-exclamation',
+  color:'#ea580c', bg:'#431407',
+  qs:[
+    {n:83, sub:'Problemas Informáticos', t:'Describí a qué le llamamos "problemas informáticos".', type:'dev'},
+    {n:84, sub:'Problemas Informáticos', t:'¿Por qué ya no se usan speakers para diagnóstico?', type:'dev'},
+    {n:85, sub:'Problemas Informáticos', t:'Desarrolle qué es un punto de restauración.', type:'dev'},
+    {n:86, sub:'Problemas Informáticos', t:'Un dispositivo no da señal de video.', type:'dev'},
+    {n:87, sub:'Problemas Informáticos', t:'Lentitud y temperatura.', type:'dev'},
+    {n:88, sub:'Problemas Informáticos', t:'Disco al 100%.', type:'dev'},
+    {n:89, sub:'Problemas Informáticos', t:'CPU al 100%.', type:'dev'},
+    {n:90, sub:'Problemas Informáticos', t:'RAM "incoherente" (el sistema reporta menos de la instalada).', type:'dev'},
+    {n:91, sub:'Problemas Informáticos', t:'Internet con baja velocidad.', type:'dev'},
+    {n:92, sub:'Problemas Informáticos', t:'Energía (cortes, picos, problemas eléctricos).', type:'dev'},
+    {n:93, sub:'Problemas Informáticos', t:'ERR_CERT (error de certificado en navegador).', type:'dev'},
+    {n:94, sub:'Problemas Informáticos', t:'.DLLs (errores de librerías dinámicas).', type:'dev'},
+    {n:95, sub:'Problemas Informáticos', t:'Interferencia en dispositivos de audio.', type:'dev'},
+    {n:96, sub:'Problemas Informáticos', t:'Estática en pantalla.', type:'dev'},
+    {n:97, sub:'Ejercicio Práctico', practico:true, practicoN:6,
+      caso:`<strong>Una computadora de escritorio llega al servicio técnico con los siguientes síntomas:</strong><ul><li>Enciende correctamente.</li><li>El sistema operativo funciona extremadamente lento.</li><li>El uso de disco permanece al 100% de forma constante.</li><li>La temperatura del procesador supera los 90°C a los pocos minutos.</li><li>El cooler del CPU gira al máximo.</li><li>El equipo se congela al abrir programas simples.</li></ul><strong>Equipo:</strong> Intel Core i5 4ª gen · 8 GB RAM DDR3 · HDD 1 TB · Placa de video integrada · Sin mantenimiento en 4+ años.`,
+      t:'Desarrollá paso a paso el procedimiento de diagnóstico y solución, indicando:\n1) Causas probables\n2) Herramientas\n3) Pruebas para confirmar cada diagnóstico\n4) Orden de intervención\n5) Soluciones definitivas o temporales\n6) Recomendaciones al cliente', type:'dev'},
+  ]
+},
+{
+  id:'c7', sname:'Clase 7 — Virus y Malware', icon:'fa-shield-halved',
+  color:'#059669', bg:'#052e16',
+  qs:[
+    {n:98,  sub:'Ciberseguridad', t:'Describí la diferencia entre virus y malware.', type:'dev'},
+    {n:99,  sub:'Ciberseguridad', t:'Describí cómo prevenimos ciberataques que no conllevan malware y cuáles son los más vistos hoy en día (estafas).', type:'dev'},
+    {n:100, sub:'Ciberseguridad', t:'¿De dónde proviene la mayor cantidad de ciberataques a nivel mundial?', type:'dev'},
+    {n:101, sub:'Ciberseguridad', t:'¿Quiénes fueron los primeros ciberdelincuentes?', type:'dev'},
+    {n:102, sub:'Ciberseguridad', t:'Enliste y describí los distintos tipos de malware.', type:'list', minItems:5},
+    {n:103, sub:'Ciberseguridad', t:'¿Cuáles son los perfiles de personas que desarrollan malware y realizan penetración de sistemas?', type:'dev'},
+    {n:104, sub:'Ciberseguridad', t:'Describí qué campos laborales vimos en torno a la ciberseguridad.', type:'dev'},
+    {n:105, sub:'Ciberseguridad', t:'Desarrollá paso a paso la detección de conexiones remotas en una computadora: desde archivos de hosts, la muestra de la dirección IP y el criterio de evaluación.', type:'dev'},
+    {n:106, sub:'Ejercicio Práctico', practico:true, practicoN:7,
+      caso:`<strong>Situación:</strong> Eithan Azariel Esteban se cebó con links raros de ElAmigos y con pop-ads de "maduras calientes a menos de 10 minutos de tu ubicación". Ahora sus discos se formatean solos, se enciende la cámara sola, el mouse se mueve solo y le aparecen mensajes de extorsión en pantalla.`,
+      t:'Describí paso a paso cómo responderías a este incidente y lo resolverías.', type:'dev'},
+  ]
+},
+];
+
+// ════════════════════════════════════════════════════════
+//  SESSION STATE
+// ════════════════════════════════════════════════════════
+let SESSION = null;
+let timerInterval = null;
+let autosaveInterval = null;
+
+function getSession(){ try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); }catch{ return null; } }
+function saveSessionLocal(data){ localStorage.setItem(SESSION_KEY, JSON.stringify(data)); }
+function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+function tsAR(date){
+  return new Date(date||Date.now()).toLocaleString('es-AR',{timeZone:TZ,hour12:false,
+    year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  SESSION = getSession();
+  if(SESSION){
+    const remaining = EXAM_DURATION_MS - (Date.now() - new Date(SESSION.started_at).getTime());
+    if(remaining <= 0){
+      showExpired();
+    } else {
+      restoreExam();
+    }
+  }
+});
+
+window.addEventListener('beforeunload', () => {
+  if(SESSION){
+    SESSION.session_log = SESSION.session_log || [];
+    SESSION.session_log.push({type:'close', ts: new Date().toISOString()});
+    collectAnswers();
+    saveSessionLocal(SESSION);
+    if(sb) sb.from('exam_sessions').update({session_log: SESSION.session_log, answers: SESSION.answers}).eq('session_token', SESSION.session_token);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  DECLARATION
+// ════════════════════════════════════════════════════════
+function onDeclChange(val){
+  const acepto = val === 'acepto';
+  document.getElementById('lbl-acepto').classList.toggle('selected', acepto);
+  document.getElementById('lbl-no').classList.toggle('selected', !acepto);
+  document.getElementById('abandon-screen').style.display = acepto ? 'none' : 'block';
+  document.getElementById('btn-iniciar').style.display = acepto ? 'flex' : 'none';
+}
+
+function abandonar(){
+  window.close();
+  setTimeout(() => {
+    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#64748b;font-family:Inter,sans-serif;text-align:center;padding:20px">
+      <div>
+        <div style="font-size:48px;margin-bottom:16px">🚫</div>
+        <div style="font-size:16px;color:#94a3b8;margin-bottom:8px">Cerraste la oportunidad de rendir el recuperatorio.</div>
+        <div style="font-size:13px">Podés cerrar esta pestaña.</div>
+      </div>
+    </div>`;
+  }, 400);
+}
+
+// ════════════════════════════════════════════════════════
+//  INICIAR EXAMEN
+// ════════════════════════════════════════════════════════
+async function iniciarExamen(){
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const dni    = document.getElementById('f-dni').value.trim();
+  const email  = document.getElementById('f-email').value.trim();
+  const twitch = document.getElementById('f-twitch').value.trim();
+  const decl   = document.querySelector('input[name="f-decl"]:checked')?.value;
+  const err    = document.getElementById('err-datos');
+
+  if(!nombre||!dni||!email){ err.textContent='Nombre, DNI y correo electrónico son obligatorios.'; err.style.display='block'; return; }
+  if(decl !== 'Acepto'){ err.textContent='Debés aceptar la declaración jurada para continuar.'; err.style.display='block'; return; }
+  err.style.display='none';
+
+  const now = new Date().toISOString();
+  const token = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2);
+
+  SESSION = {
+    session_token: token,
+    nombre, dni, email, twitch,
+    started_at: now,
+    last_saved_at: now,
+    answers: {},
+    session_log: [{type:'start', ts: now, device: navigator.userAgent.slice(0,60)}]
+  };
+  saveSessionLocal(SESSION);
+
+  if(sb){
+    try{
+      await sb.from('exam_sessions').insert({
+        session_token: token, nombre, dni, email, twitch,
+        started_at: now, answers:{}, session_log: SESSION.session_log
+      });
+    }catch(e){ console.warn('Supabase insert failed, continuando offline:', e); }
+  }
+
+  renderExam();
+  startTimer();
+  startAutosave();
+}
+
+// ════════════════════════════════════════════════════════
+//  RETOMAR SESIÓN
+// ════════════════════════════════════════════════════════
+function toggleRetomar(){
+  const f = document.getElementById('retomar-fields');
+  const open = f.style.display === 'block';
+  f.style.display = open ? 'none' : 'block';
+  document.getElementById('retomar-chevron').style.transform = open ? '' : 'rotate(180deg)';
+}
+
+async function retomarSesion(){
+  const email = document.getElementById('r-email').value.trim();
+  const dni   = document.getElementById('r-dni').value.trim();
+  const msg   = document.getElementById('retomar-msg');
+  if(!email||!dni){ msg.textContent='Completá email y DNI.'; return; }
+  msg.textContent='Buscando...';
+
+  // Intentar Supabase primero
+  if(sb){
+    try{
+      const {data, error} = await sb.from('exam_sessions')
+        .select('*').eq('email', email).eq('dni', dni)
+        .order('started_at', {ascending:false}).limit(1).single();
+      if(!error && data){
+        SESSION = data;
+        saveSessionLocal(SESSION);
+        const remaining = EXAM_DURATION_MS - (Date.now() - new Date(SESSION.started_at).getTime());
+        if(remaining <= 0){ showExpired(); return; }
+        SESSION.session_log = SESSION.session_log || [];
+        SESSION.session_log.push({type:'reopen', ts: new Date().toISOString(), device: navigator.userAgent.slice(0,60)});
+        renderExam();
+        restoreAnswers();
+        startTimer();
+        startAutosave();
+        return;
+      }
+    }catch(e){ console.warn('Supabase lookup failed:', e); }
+  }
+  msg.textContent='Sesión no encontrada. Si iniciaste en este mismo dispositivo, recargá la página.';
+}
+
+function restoreExam(){
+  SESSION.session_log = SESSION.session_log || [];
+  SESSION.session_log.push({type:'reopen', ts: new Date().toISOString()});
+  renderExam();
+  restoreAnswers();
+  startTimer();
+  startAutosave();
+}
+
+function showExpired(){
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('main').innerHTML = `<div style="background:#1c0606;border:2px solid var(--red);border-radius:14px;padding:32px 24px;text-align:center;margin-top:40px">
+    <div style="font-size:48px;margin-bottom:16px">⏰</div>
+    <div style="font-size:18px;font-weight:700;color:#fca5a5;margin-bottom:8px">Tiempo agotado</div>
+    <div style="font-size:13px;color:#f87171">Las 48 horas del recuperatorio han vencido. Comunicate con el docente si creés que esto es un error.</div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  TIMER
+// ════════════════════════════════════════════════════════
+function startTimer(){
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+function updateTimer(){
+  if(!SESSION) return;
+  const remaining = EXAM_DURATION_MS - (Date.now() - new Date(SESSION.started_at).getTime());
+  const el = document.getElementById('timer-val');
+  if(remaining <= 0){
+    el.textContent = 'TIEMPO AGOTADO';
+    el.className = 'timer-val red blink';
+    clearInterval(timerInterval);
+    return;
+  }
+  el.textContent = formatMs(remaining);
+  if(remaining < 3600000)      { el.className = 'timer-val red blink'; }
+  else if(remaining < 21600000){ el.className = 'timer-val amber'; }
+  else                          { el.className = 'timer-val'; }
+}
+
+function formatMs(ms){
+  const s = Math.floor(ms/1000);
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s%60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+// ════════════════════════════════════════════════════════
+//  AUTOSAVE
+// ════════════════════════════════════════════════════════
+function startAutosave(){
+  autosaveInterval = setInterval(autosave, AUTOSAVE_MS);
+}
+
+async function autosave(){
+  if(!SESSION) return;
+  collectAnswers();
+  SESSION.last_saved_at = new Date().toISOString();
+  saveSessionLocal(SESSION);
+  if(sb){
+    try{
+      await sb.from('exam_sessions').update({
+        answers: SESSION.answers,
+        last_saved_at: SESSION.last_saved_at,
+        session_log: SESSION.session_log
+      }).eq('session_token', SESSION.session_token);
+    }catch(e){}
+  }
+  // flash dot
+  const dot = document.getElementById('autosave-dot');
+  dot.classList.add('show');
+  setTimeout(() => dot.classList.remove('show'), 1500);
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER ENGINE
+// ════════════════════════════════════════════════════════
+const root = document.getElementById('questions-root');
+const snav = document.getElementById('section-nav');
+let totalQuestions = 0;
+
+function qId(n){ return 'q_'+String(n).replace('.','_'); }
+
+function renderExam(){
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+  root.innerHTML = '';
+  snav.innerHTML = '';
+  totalQuestions = 0;
+
+  SECTIONS.forEach(sec => {
+    const card = document.createElement('div');
+    card.className = 'section-card';
+    card.id = sec.id;
+
+    let lastSub = null;
+    let bodyHtml = '';
+
+    sec.qs.forEach(q => {
+      if(Number.isInteger(q.n)) totalQuestions++;
+      const sub = q.sub || '';
+      if(sub !== lastSub){
+        lastSub = sub;
+        if(q.practico){
+          bodyHtml += `<div class="sub-divider"><span class="sub-divider-line"></span></div>`;
+        } else {
+          bodyHtml += `<div class="sub-divider"><span class="sub-divider-line"></span><span class="sub-divider-label">${sub}</span><span class="sub-divider-line"></span></div>`;
+        }
+      }
+      bodyHtml += renderQuestion(q);
+    });
+
+    card.innerHTML = `
+      <div class="section-head">
+        <div class="section-icon" style="background:${sec.bg};color:${sec.color}">
+          <i class="${sec.icon.startsWith('fa-brands')?sec.icon:'fa-solid '+sec.icon}"></i>
+        </div>
+        <div class="section-name" style="color:${sec.color}">${sec.sname}</div>
+        <div class="section-count">${sec.qs.filter(q=>Number.isInteger(q.n)).length} preguntas</div>
+      </div>
+      <div class="section-body">${bodyHtml}</div>`;
+
+    root.appendChild(card);
+
+    const nb = document.createElement('button');
+    nb.type='button'; nb.className='snav-btn';
+    nb.style.borderColor = sec.color+'55';
+    nb.textContent = sec.sname.split('—')[1]?.trim() || sec.sname;
+    nb.onclick = () => card.scrollIntoView({behavior:'smooth',block:'start'});
+    snav.appendChild(nb);
+  });
+
+  document.getElementById('prog-label').textContent = '0 / '+totalQuestions;
+
+  // init canvases
+  setTimeout(() => {
+    SECTIONS.forEach(sec => sec.qs.forEach(q => {
+      if(q.type==='draw') initCanvas(qId(q.n));
+    }));
+  }, 100);
+
+  // init list tables
+  SECTIONS.forEach(sec => sec.qs.forEach(q => {
+    if(q.type==='list'){ ltInit(qId(q.n), q.minItems||1, false); }
+    if(q.type==='list_prefilled'){ ltInit(qId(q.n), q.prefill.length, true, q.prefill); }
+  }));
+
+  calcProgress();
+}
+
+function renderQuestion(q){
+  const displayN = Number.isInteger(q.n) ? q.n : q.n.toFixed(1).replace('.0','');
+
+  if(q.practico){
+    return `<div class="practico-wrapper" id="qb_${qId(q.n)}">
+      <div class="practico-badge">
+        <i class="fa-solid fa-bolt"></i>
+        Ejercicio Práctico #${q.practicoN}
+        <span class="practico-70">70% de aprobación</span>
+      </div>
+      ${q.caso ? `<div class="caso-box">${q.caso}</div>` : ''}
+      <div class="q-head">
+        <div class="q-num" style="background:#78350f;border-color:#b45309;color:#fcd34d">${displayN}</div>
+        <div class="q-text" style="color:var(--practico-text);font-weight:600">${q.t.replace(/\n/g,'<br>')}</div>
+        ${badgeFor(q.type)}
+      </div>
+      ${renderInput(q)}
+    </div>`;
+  }
+
+  return `<div class="q-block" id="qb_${qId(q.n)}">
+    <div class="q-head">
+      <div class="q-num">${displayN}</div>
+      <div class="q-text">${q.t.replace(/\n/g,'<br>')}</div>
+      ${badgeFor(q.type)}
+    </div>
+    ${renderInput(q)}
+    ${q.type==='dev'&&q.attach ? attachHtml(qId(q.n)) : ''}
+  </div>`;
+}
+
+function badgeFor(t){
+  if(t==='dev'||t==='list'||t==='list_prefilled') return '<span class="q-badge badge-dev">Desarrollo</span>';
+  if(t==='tf')    return '<span class="q-badge badge-tf">V / F</span>';
+  if(t==='radio') return '<span class="q-badge badge-radio">Opción única</span>';
+  if(t==='check') return '<span class="q-badge badge-check">Selección múltiple</span>';
+  if(t==='draw')  return '<span class="q-badge badge-draw">Dibujo</span>';
+  return '';
+}
+
+function renderInput(q){
+  const id = qId(q.n);
+  if(q.type==='dev')  return `<textarea id="${id}" name="${id}" placeholder="Tu respuesta sin límite de caracteres..." oninput="onInput(this)" style="min-height:100px"></textarea>`;
+  if(q.type==='tf')   return renderTF(id);
+  if(q.type==='radio')return renderRadio(id, optsFor(q));
+  if(q.type==='check')return renderCheck(id, optsFor(q));
+  if(q.type==='draw') return renderDraw(id);
+  if(q.type==='list'||q.type==='list_prefilled') return `<div id="lt_${id}"></div>`;
+  return '';
+}
+
+// Shuffle determinístico por alumno: misma semilla = mismo orden para el mismo estudiante
+function shuffleOpts(opts, seed){
+  const a = [...opts];
+  let h = (seed||'x').split('').reduce((acc,c)=>acc*31+c.charCodeAt(0)|0, 0);
+  for(let i=a.length-1; i>0; i--){
+    h = (Math.imul(h,9301)+49297) % 233280;
+    const j = Math.floor((h/233280)*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function optsFor(q){ return shuffleOpts(q.opts, (SESSION?.dni||'')+''+q.n); }
+
+function renderTF(id){
+  return `<div class="tf-group" data-name="${id}">
+    <label class="opt-label" onclick="selectOpt(this,'radio')"><input type="radio" name="${id}" value="Verdadero"> Verdadero</label>
+    <label class="opt-label" onclick="selectOpt(this,'radio')"><input type="radio" name="${id}" value="Falso"> Falso</label>
+  </div>`;
+}
+function renderRadio(id, opts){
+  return `<div class="radio-group" data-name="${id}">
+    ${opts.map(o=>`<label class="opt-label" onclick="selectOpt(this,'radio')"><input type="radio" name="${id}" value="${escHtml(o)}"> ${escHtml(o)}</label>`).join('')}
+  </div>`;
+}
+function renderCheck(id, opts){
+  return `<div class="check-group" data-name="${id}">
+    ${opts.map(o=>`<label class="opt-label" onclick="selectOpt(this,'check')"><input type="checkbox" name="${id}[]" value="${escHtml(o)}"> ${escHtml(o)}</label>`).join('')}
+  </div>`;
+}
+function renderDraw(id){
+  return `<div class="draw-widget">
+    <div class="draw-toolbar">
+      <button type="button" class="draw-btn active" id="pen_${id}"  onclick="setTool('pen','${id}',this)"><i class="fa-solid fa-pen"></i> Lápiz</button>
+      <button type="button" class="draw-btn"        id="era_${id}"  onclick="setTool('era','${id}',this)"><i class="fa-solid fa-eraser"></i> Borrar</button>
+      <button type="button" class="draw-btn"        id="rect_${id}" onclick="setTool('rect','${id}',this)"><i class="fa-solid fa-vector-square"></i> Rect.</button>
+      <button type="button" class="draw-btn"        id="circ_${id}" onclick="setTool('circ','${id}',this)"><i class="fa-regular fa-circle"></i> Círculo</button>
+      <button type="button" class="draw-btn"        id="text_${id}" onclick="setTool('text','${id}',this)"><i class="fa-solid fa-font"></i> Texto</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+      ${['#000000','#2563eb','#dc2626','#16a34a'].map((c,i)=>`<div class="color-dot${i===0?' active':''}" style="background:${c}" onclick="setColor('${c}','${id}',this)" data-draw="${id}"></div>`).join('')}
+      <select class="size-select" onchange="setSize(this.value,'${id}')"><option value="2">Fino</option><option value="4" selected>Normal</option><option value="8">Grueso</option><option value="14">Muy grueso</option></select>
+      <button type="button" class="draw-btn" onclick="undoDraw('${id}')"><i class="fa-solid fa-rotate-left"></i> Deshacer</button>
+      <button type="button" class="draw-btn" onclick="clearDraw('${id}')"><i class="fa-solid fa-trash"></i> Limpiar</button>
+    </div>
+    <canvas class="draw-canvas" id="canvas_${id}" height="260"></canvas>
+  </div>`;
+}
+function attachHtml(id){
+  const uid='up_'+id;
+  return `<button type="button" class="attach-toggle" onclick="toggleAttach(this)"><i class="fa-solid fa-image"></i> Adjuntar imagen (opcional)</button>
+  <div class="attach-panel"><div class="img-upload-area" onclick="document.getElementById('${uid}').click()">
+    <input type="file" id="${uid}" accept="image/*" onchange="previewImg(this,'prev_${uid}')">
+    <p><i class="fa-solid fa-image" style="color:var(--muted);display:block;margin-bottom:4px;font-size:18px"></i>Hacé clic o arrastrá una imagen</p>
+  </div>
+  <div class="img-preview" id="prev_${uid}"><img src="" alt="preview"><button type="button" class="img-remove" onclick="removeImg('${uid}','prev_${uid}')">✕ Quitar</button></div></div>`;
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ════════════════════════════════════════════════════════
+//  LIST TABLE COMPONENT
+// ════════════════════════════════════════════════════════
+function ltInit(id, minItems, prefilled, prefillTitles){
+  const container = document.getElementById('lt_'+id);
+  if(!container) return;
+  container.innerHTML = `
+    <div class="list-table">
+      <div class="lt-header">
+        <div>#</div><div>Elemento / Título</div>
+        <div class="lth-dev">Desarrollo</div><div></div>
+      </div>
+      <div class="lt-rows" id="lt-rows-${id}"></div>
+      <div class="lt-footer">
+        ${prefilled ? '' : `<button type="button" class="lt-add-btn" onclick="ltAddRow('${id}',false)"><i class="fa-solid fa-plus"></i> Añadir elemento</button>`}
+        <span class="lt-hint">${minItems ? `Mínimo ${minItems} elementos` : ''}</span>
+      </div>
+    </div>`;
+
+  if(prefilled && prefillTitles){
+    prefillTitles.forEach(title => ltAddRow(id, true, title));
+  } else {
+    const startCount = Math.max(minItems||1, 1);
+    for(let i=0; i<Math.min(startCount,3); i++) ltAddRow(id, false);
+  }
+}
+
+function ltAddRow(id, prefilled, title){
+  const rows = document.getElementById('lt-rows-'+id);
+  if(!rows) return;
+  const idx = rows.children.length + 1;
+  const rowId = `ltr_${id}_${idx}`;
+  const div = document.createElement('div');
+  div.className = 'lt-row';
+  div.id = rowId;
+  div.innerHTML = `
+    <div class="lt-row-head">
+      <div class="lt-row-num">${idx}</div>
+      <input type="text" class="lt-title-input" placeholder="Nombre del elemento..."
+             value="${escHtml(title||'')}" ${prefilled?'readonly':''} oninput="calcProgress()">
+      <button type="button" class="lt-dev-toggle" onclick="ltToggleDev(this,'${rowId}')">
+        <span class="dot"></span><i class="fa-solid fa-pen-to-square"></i> Agregar desarrollo
+      </button>
+      ${prefilled ? '' : `<button type="button" class="lt-remove-btn" onclick="ltRemoveRow('${rowId}','${id}')" title="Quitar"><i class="fa-solid fa-times"></i></button>`}
+    </div>
+    <div class="lt-dev-area" id="ltdev_${rowId}" style="display:none">
+      <textarea placeholder="Desarrollo sin límite de caracteres..." oninput="ltOnDevInput(this,'${rowId}')"></textarea>
+    </div>`;
+  rows.appendChild(div);
+  calcProgress();
+}
+
+function ltToggleDev(btn, rowId){
+  const area = document.getElementById('ltdev_'+rowId);
+  const open = area.style.display === 'block';
+  area.style.display = open ? 'none' : 'block';
+  btn.classList.toggle('open', !open);
+  const icon = btn.querySelector('i');
+  icon.className = 'fa-solid ' + (open ? 'fa-pen-to-square' : 'fa-chevron-up');
+  const label = btn.lastChild;
+  if(label.nodeType===3) btn.removeChild(label);
+  btn.appendChild(document.createTextNode(open ? ' Agregar desarrollo' : ' Ocultar'));
+  if(!open) area.querySelector('textarea').focus();
+}
+
+function ltOnDevInput(ta, rowId){
+  const btn = document.querySelector(`#${rowId} .lt-dev-toggle`);
+  if(btn) btn.classList.toggle('has-content', ta.value.trim().length > 0);
+  ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px';
+  calcProgress();
+}
+
+function ltRemoveRow(rowId, id){
+  const row = document.getElementById(rowId);
+  if(row){ row.remove(); ltRenumber(id); calcProgress(); }
+}
+
+function ltRenumber(id){
+  const rows = document.getElementById('lt-rows-'+id);
+  if(!rows) return;
+  [...rows.children].forEach((row, i) => {
+    const numEl = row.querySelector('.lt-row-num');
+    if(numEl) numEl.textContent = i+1;
+  });
+}
+
+function ltGetValue(id){
+  const rows = document.getElementById('lt-rows-'+id);
+  if(!rows) return '';
+  return [...rows.children].map(row => {
+    const title = row.querySelector('.lt-title-input')?.value.trim()||'';
+    const dev   = row.querySelector('textarea')?.value.trim()||'';
+    return title + (dev ? '||'+dev : '');
+  }).filter(x=>x).join('|||');
+}
+
+function ltSetValue(id, val){
+  if(!val) return;
+  const rows = document.getElementById('lt-rows-'+id);
+  if(!rows) return;
+  const items = val.split('|||');
+  // ensure enough rows
+  while(rows.children.length < items.length) ltAddRow(id, false);
+  items.forEach((item, i) => {
+    const [title, dev] = item.split('||');
+    const row = rows.children[i];
+    if(!row) return;
+    const ti = row.querySelector('.lt-title-input');
+    const ta = row.querySelector('textarea');
+    if(ti && !ti.readOnly) ti.value = title||'';
+    if(ta && dev){ ta.value = dev; ltOnDevInput(ta, row.id); document.getElementById('ltdev_'+row.id).style.display='block'; row.querySelector('.lt-dev-toggle')?.classList.add('open','has-content'); }
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  PROGRESS
+// ════════════════════════════════════════════════════════
+function calcProgress(){
+  if(!root || root.children.length===0) return;
+  let filled = 0;
+  SECTIONS.forEach(sec => sec.qs.forEach(q => {
+    if(!Number.isInteger(q.n)) return;
+    const id = qId(q.n);
+    if(q.type==='dev'){
+      const ta = document.getElementById(id);
+      if(ta?.value.trim()) filled++;
+    } else if(q.type==='list'||q.type==='list_prefilled'){
+      if(ltGetValue(id)) filled++;
+    } else if(q.type==='tf'||q.type==='radio'){
+      if(document.querySelector(`input[name="${id}"]:checked`)) filled++;
+    } else if(q.type==='check'){
+      if(document.querySelector(`input[name="${id}[]"]:checked`)) filled++;
+    } else if(q.type==='draw'){
+      filled++; // always count draws
+    }
+  }));
+  const pct = Math.round((filled/totalQuestions)*100);
+  document.getElementById('prog-fill').style.width = pct+'%';
+  document.getElementById('prog-label').textContent = `${filled} / ${totalQuestions}`;
+}
+
+function onInput(el){
+  el.style.height='auto'; el.style.height=el.scrollHeight+'px';
+  calcProgress();
+}
+
+// ════════════════════════════════════════════════════════
+//  OPTION SELECT
+// ════════════════════════════════════════════════════════
+function selectOpt(label, type){
+  const group = label.closest('.tf-group,.radio-group,.check-group');
+  if(type==='radio'){
+    group.querySelectorAll('.opt-label').forEach(l => l.classList.remove('selected'));
+    label.classList.add('selected');
+  } else {
+    label.classList.toggle('selected', label.querySelector('input').checked);
+  }
+  calcProgress();
+}
+document.addEventListener('change', e => {
+  if(e.target.type==='checkbox'){
+    const label = e.target.closest('.opt-label');
+    if(label) label.classList.toggle('selected', e.target.checked);
+    calcProgress();
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  COLLECT & RESTORE ANSWERS
+// ════════════════════════════════════════════════════════
+function collectAnswers(){
+  if(!SESSION) return;
+  const ans = {};
+  SECTIONS.forEach(sec => sec.qs.forEach(q => {
+    const id = qId(q.n);
+    if(q.type==='dev'){
+      const ta = document.getElementById(id);
+      if(ta) ans[id] = ta.value;
+    } else if(q.type==='list'||q.type==='list_prefilled'){
+      ans[id] = ltGetValue(id);
+    } else if(q.type==='tf'||q.type==='radio'){
+      const checked = document.querySelector(`input[name="${id}"]:checked`);
+      if(checked) ans[id] = checked.value;
+    } else if(q.type==='check'){
+      const checked = [...document.querySelectorAll(`input[name="${id}[]"]:checked`)].map(i=>i.value);
+      if(checked.length) ans[id] = checked.join('; ');
+    } else if(q.type==='draw'){
+      const canvas = document.getElementById('canvas_'+id);
+      if(canvas) ans[id] = '[DIBUJO:'+canvas.toDataURL('image/png').slice(0,30)+'...]';
+    }
+  }));
+  SESSION.answers = ans;
+}
+
+function restoreAnswers(){
+  if(!SESSION?.answers) return;
+  const ans = SESSION.answers;
+  SECTIONS.forEach(sec => sec.qs.forEach(q => {
+    const id = qId(q.n);
+    const val = ans[id];
+    if(!val) return;
+    if(q.type==='dev'){
+      const ta = document.getElementById(id);
+      if(ta){ ta.value=val; ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
+    } else if(q.type==='list'||q.type==='list_prefilled'){
+      ltSetValue(id, val);
+    } else if(q.type==='tf'||q.type==='radio'){
+      const input = document.querySelector(`input[name="${id}"][value="${val.replace(/"/g,'\\"')}"]`);
+      if(input){ input.checked=true; input.closest('.opt-label')?.classList.add('selected'); }
+    } else if(q.type==='check'){
+      val.split('; ').forEach(v => {
+        const input = document.querySelector(`input[name="${id}[]"][value="${v.replace(/"/g,'\\"')}"]`);
+        if(input){ input.checked=true; input.closest('.opt-label')?.classList.add('selected'); }
+      });
+    }
+  }));
+  calcProgress();
+}
+
+// ════════════════════════════════════════════════════════
+//  CSV GENERATION
+// ════════════════════════════════════════════════════════
+function generateCSV(){
+  collectAnswers();
+  const now = new Date().toISOString();
+  const log = (SESSION.session_log||[]).map(e=>`${e.type}@${tsAR(e.ts)}`).join(' | ');
+
+  const meta = [
+    ['Marca temporal', tsAR(now)],
+    ['Correo electrónico', SESSION.email||''],
+    ['Nombre y Apellido', SESSION.nombre||''],
+    ['DNI', SESSION.dni||''],
+    ['Usuario de Twitch', SESSION.twitch||''],
+    ['Declaración jurada', 'Acepto'],
+    ['exam_started_at', tsAR(SESSION.started_at)],
+    ['exam_submitted_at', tsAR(now)],
+    ['session_log', log],
+  ];
+
+  const qHeaders = [];
+  const qValues  = [];
+
+  SECTIONS.forEach(sec => sec.qs.forEach(q => {
+    qHeaders.push(`P${q.n} — ${q.t.slice(0,60).replace(/\n/g,' ')}`);
+    qValues.push(SESSION.answers[qId(q.n)]||'');
+  }));
+
+  const headers = [...meta.map(m=>m[0]), ...qHeaders];
+  const values  = [...meta.map(m=>m[1]), ...qValues];
+
+  const csvRow = (arr) => arr.map(v => {
+    const s = String(v).replace(/"/g,'""');
+    return /[,"\n\r]/.test(s) ? `"${s}"` : s;
+  }).join(',');
+
+  return csvRow(headers) + '\r\n' + csvRow(values) + '\r\n';
+}
+
+function downloadCSV(csv, filename){
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ════════════════════════════════════════════════════════
+//  SUBMIT
+// ════════════════════════════════════════════════════════
+async function submitExamen(){
+  const err = document.getElementById('err-submit');
+  const btn = document.getElementById('btn-submit');
+  err.style.display='none';
+
+  if(!SESSION){ err.textContent='Sesión no encontrada. Recargá la página.'; err.style.display='block'; return; }
+
+  btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+  collectAnswers();
+  const now = new Date().toISOString();
+  SESSION.submitted_at = now;
+  SESSION.session_log = SESSION.session_log||[];
+  SESSION.session_log.push({type:'submit', ts: now});
+  saveSessionLocal(SESSION);
+
+  // Guardar en Supabase si está configurado
+  if(sb){
+    try{
+      await sb.from('exam_sessions').update({
+        answers: SESSION.answers,
+        submitted_at: now,
+        session_log: SESSION.session_log
+      }).eq('session_token', SESSION.session_token);
+    }catch(e){ console.warn('Supabase submit failed:', e); }
+  }
+
+  // Enviar a Google Apps Script (si está configurado)
+  let gasOk = false;
+  if(GAS_URL){
+    try{
+      const payload = buildGASPayload(now);
+      const resp = await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      gasOk = true;
+    }catch(e){ console.warn('GAS submit failed:', e); }
+  }
+
+  // Fallback local: si GAS no está configurado, guardar CSV como respaldo
+  if(!GAS_URL){
+    const csv = generateCSV();
+    const fname = `Recuperatorio_${SESSION.dni}_${SESSION.nombre.replace(/\s+/g,'_').slice(0,20)}_${now.slice(0,10)}.csv`;
+    downloadCSV(csv, fname);
+  }
+
+  clearInterval(timerInterval);
+  clearInterval(autosaveInterval);
+
+  document.getElementById('step2').style.display='none';
+  document.getElementById('success-card').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function buildGASPayload(submittedAt){
+  return {
+    session_token: SESSION.session_token,
+    nombre:        SESSION.nombre,
+    dni:           SESSION.dni,
+    email:         SESSION.email,
+    twitch:        SESSION.twitch,
+    declaracion:   'Acepto',
+    exam_started_at:   tsAR(SESSION.started_at),
+    exam_submitted_at: tsAR(submittedAt),
+    session_log: (SESSION.session_log||[]).map(e=>`${e.type}@${tsAR(e.ts)}`).join(' | '),
+    answers: SESSION.answers
+  };
+}
+
+// ════════════════════════════════════════════════════════
+//  DRAWING ENGINE
+// ════════════════════════════════════════════════════════
+const drawState = {};
+
+function initCanvas(id){
+  if(drawState[id]) return drawState[id];
+  const canvas = document.getElementById('canvas_'+id);
+  if(!canvas) return null;
+  canvas.width = canvas.offsetWidth||800;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  const state = {ctx,canvas,tool:'pen',color:'#000000',size:4,drawing:false,history:[]};
+  drawState[id] = state;
+
+  const getPos = e => {
+    const r = canvas.getBoundingClientRect();
+    const sc = canvas.width/r.width;
+    if(e.touches) return {x:(e.touches[0].clientX-r.left)*sc, y:(e.touches[0].clientY-r.top)*sc};
+    return {x:(e.clientX-r.left)*sc, y:(e.clientY-r.top)*sc};
+  };
+  const start = e => {
+    if(state.tool === 'text') return;
+    e.preventDefault();
+    state.drawing = true;
+    const p = getPos(e);
+    state.startX = p.x; state.startY = p.y;
+    state.history.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    if(state.history.length>30) state.history.shift();
+    if(state.tool==='pen'||state.tool==='era'){
+      ctx.beginPath(); ctx.moveTo(p.x,p.y);
+    } else {
+      state.snapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
+    }
+  };
+  const move = e => {
+    if(!state.drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    if(state.tool==='pen'||state.tool==='era'){
+      ctx.lineWidth = state.tool==='era'?state.size*3:state.size;
+      ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.strokeStyle = state.tool==='era'?'#fff':state.color;
+      ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y);
+    } else if(state.tool==='rect'||state.tool==='circ'){
+      ctx.putImageData(state.snapshot,0,0);
+      ctx.strokeStyle=state.color; ctx.lineWidth=state.size;
+      ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.beginPath();
+      if(state.tool==='rect'){
+        ctx.strokeRect(state.startX, state.startY, p.x-state.startX, p.y-state.startY);
+      } else {
+        const rx=Math.max(0.1,Math.abs(p.x-state.startX)/2);
+        const ry=Math.max(0.1,Math.abs(p.y-state.startY)/2);
+        const cx=Math.min(state.startX,p.x)+rx;
+        const cy=Math.min(state.startY,p.y)+ry;
+        ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); ctx.stroke();
+      }
+    }
+  };
+  const stop = () => { if(!state.drawing) return; state.drawing=false; ctx.beginPath(); state.snapshot=null; };
+  canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move);
+  canvas.addEventListener('mouseup',stop);    canvas.addEventListener('mouseleave',stop);
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  canvas.addEventListener('touchend',stop);
+  canvas.addEventListener('click', e => {
+    if(state.tool!=='text') return;
+    const p = getPos(e);
+    state.history.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    if(state.history.length>30) state.history.shift();
+    openTextInput(canvas, ctx, p, state);
+  });
+  return state;
+}
+
+function ensureCanvas(id){ return drawState[id]||initCanvas(id); }
+const DRAW_TOOLS = ['pen','era','rect','circ','text'];
+function setTool(tool,id,btn){
+  const s=ensureCanvas(id); if(!s)return; s.tool=tool;
+  DRAW_TOOLS.forEach(t=>{ const el=document.getElementById(t+'_'+id); if(el) el.classList.toggle('active',t===tool); });
+  const cv=document.getElementById('canvas_'+id);
+  if(cv) cv.style.cursor = tool==='text'?'text':tool==='era'?'cell':'crosshair';
+}
+function setColor(c,id,dot){
+  const s=ensureCanvas(id); if(!s)return; s.color=c; s.tool='pen';
+  document.querySelectorAll(`.color-dot[data-draw="${id}"]`).forEach(d=>d.classList.remove('active'));
+  dot.classList.add('active');
+  DRAW_TOOLS.forEach(t=>{ const el=document.getElementById(t+'_'+id); if(el) el.classList.toggle('active',t==='pen'); });
+  const cv=document.getElementById('canvas_'+id); if(cv) cv.style.cursor='crosshair';
+}
+
+function openTextInput(canvas, ctx, p, state){
+  const existing = document.getElementById('draw-text-input');
+  if(existing) existing.remove();
+  const rect  = canvas.getBoundingClientRect();
+  const scale = canvas.width / rect.width;
+  const fontSize = Math.max(14, state.size * 3);
+  const input = document.createElement('input');
+  input.id   = 'draw-text-input';
+  input.type = 'text';
+  input.placeholder = 'Escribí y presioná Enter…';
+  Object.assign(input.style, {
+    position:'fixed',
+    left: (rect.left + p.x/scale) + 'px',
+    top:  (rect.top  + p.y/scale - fontSize*0.8) + 'px',
+    background:'rgba(30,58,95,0.7)',
+    border:'1px dashed '+state.color,
+    color: state.color,
+    fontSize: fontSize+'px',
+    fontFamily:'Inter,sans-serif',
+    outline:'none',
+    minWidth:'140px',
+    zIndex:'9999',
+    padding:'2px 6px',
+    borderRadius:'4px',
+    backdropFilter:'blur(4px)',
+  });
+  document.body.appendChild(input);
+  input.focus();
+  const commit = () => {
+    const text = input.value.trim();
+    if(text){
+      ctx.fillStyle = state.color;
+      ctx.font = `${fontSize}px Inter,sans-serif`;
+      ctx.fillText(text, p.x, p.y);
+    }
+    if(document.body.contains(input)) input.remove();
+  };
+  input.addEventListener('keydown', e => {
+    if(e.key==='Enter'){ e.preventDefault(); commit(); }
+    if(e.key==='Escape'){ input.remove(); }
+  });
+  setTimeout(()=>input.addEventListener('blur', commit), 150);
+}
+function setSize(v,id){ const s=ensureCanvas(id); if(s) s.size=parseInt(v); }
+function undoDraw(id){ const s=ensureCanvas(id); if(!s||!s.history.length)return; s.ctx.putImageData(s.history.pop(),0,0); }
+function clearDraw(id){ const s=ensureCanvas(id); if(!s)return; s.history.push(s.ctx.getImageData(0,0,s.canvas.width,s.canvas.height)); s.ctx.fillStyle='#fff'; s.ctx.fillRect(0,0,s.canvas.width,s.canvas.height); }
+
+window.addEventListener('resize', () => {
+  SECTIONS.forEach(sec => sec.qs.forEach(q => {
+    if(q.type==='draw'){
+      const id=qId(q.n), canvas=document.getElementById('canvas_'+id);
+      if(!canvas) return;
+      const saved=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height);
+      canvas.width=canvas.offsetWidth||800;
+      canvas.getContext('2d').putImageData(saved,0,0);
+    }
+  }));
+});
+
+// ════════════════════════════════════════════════════════
+//  IMAGE UPLOAD
+// ════════════════════════════════════════════════════════
+function previewImg(input,prevId){
+  const prev=document.getElementById(prevId);
+  if(!input.files||!input.files[0]){ prev.style.display='none'; return; }
+  const reader=new FileReader();
+  reader.onload=e=>{ prev.querySelector('img').src=e.target.result; prev.style.display='block'; };
+  reader.readAsDataURL(input.files[0]);
+}
+function removeImg(inputId,prevId){
+  document.getElementById(inputId).value='';
+  const prev=document.getElementById(prevId);
+  prev.querySelector('img').src=''; prev.style.display='none';
+}
+function toggleAttach(btn){
+  const panel=btn.nextElementSibling;
+  const open=panel.style.display==='block';
+  panel.style.display=open?'none':'block';
+  btn.querySelector('i').className='fa-solid '+(open?'fa-image':'fa-times');
+}
+
+// ════════════════════════════════════════════════════════
+//  SCROLL TOP
+// ════════════════════════════════════════════════════════
+window.addEventListener('scroll', () => {
+  document.getElementById('scroll-top').style.opacity = window.scrollY>400?'1':'0';
+});
+</script>
+</body>
+</html>
