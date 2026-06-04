@@ -824,36 +824,81 @@ async function iniciarExamen(){
   const twitch = document.getElementById('f-twitch').value.trim();
   const decl   = document.querySelector('input[name="f-decl"]:checked')?.value;
   const err    = document.getElementById('err-datos');
+  const btn    = document.getElementById('btn-iniciar');
 
   if(!nombre||!dni||!email){ err.textContent='Nombre, DNI y correo electrónico son obligatorios.'; err.style.display='block'; return; }
   if(decl !== 'Acepto'){ err.textContent='Debés aceptar la declaración jurada para continuar.'; err.style.display='block'; return; }
   err.style.display='none';
+  btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
 
-  const now = new Date().toISOString();
+  // ── Buscar sesión existente en Supabase por DNI ──────────
+  // Esto permite continuar desde otro dispositivo/navegador
+  if(sb){
+    try{
+      const { data: existing, error: sbErr } = await sb
+        .from('exam_sessions')
+        .select('*')
+        .eq('dni', dni)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if(!sbErr && existing){
+        const remaining = EXAM_DURATION_MS - (Date.now() - new Date(existing.started_at).getTime());
+        if(remaining <= 0){
+          btn.disabled=false;
+          btn.innerHTML='<i class="fa-solid fa-play"></i> INICIAR EXAMEN';
+          showExpired(); return;
+        }
+        // Recuperar sesión existente automáticamente
+        SESSION = existing;
+        SESSION.session_log = SESSION.session_log || [];
+        SESSION.session_log.push({type:'reopen_device', ts: new Date().toISOString(), device: navigator.userAgent.slice(0,60)});
+        saveSessionLocal(SESSION);
+        // Actualizar log en Supabase
+        await sb.from('exam_sessions').update({session_log: SESSION.session_log}).eq('session_token', SESSION.session_token);
+        // Mostrar mensaje informativo
+        err.style.background='#0c1a2e'; err.style.borderColor='#3b82f6'; err.style.color='#93c5fd'; err.style.display='block';
+        err.textContent='✓ Sesión anterior encontrada — continuando desde donde lo dejaste.';
+        setTimeout(()=>{ err.style.display='none'; }, 3000);
+        renderExam();
+        restoreAnswers();
+        startTimer();
+        startAutosave();
+        btn.disabled=false;
+        btn.innerHTML='<i class="fa-solid fa-play"></i> INICIAR EXAMEN';
+        return;
+      }
+    }catch(e){ console.warn('Supabase lookup failed:', e); }
+  }
+
+  // ── No existe sesión → crear nueva ───────────────────────
+  const now   = new Date().toISOString();
   const token = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2);
 
   SESSION = {
     session_token: token,
     nombre, dni, email, twitch,
-    started_at: now,
-    last_saved_at: now,
+    started_at: now, last_saved_at: now,
     answers: {},
     session_log: [{type:'start', ts: now, device: navigator.userAgent.slice(0,60)}]
   };
   saveSessionLocal(SESSION);
 
   if(sb){
-    try{
-      await sb.from('exam_sessions').insert({
-        session_token: token, nombre, dni, email, twitch,
-        started_at: now, answers:{}, session_log: SESSION.session_log
-      });
-    }catch(e){ console.warn('Supabase insert failed, continuando offline:', e); }
+    const { error: sbErr } = await sb.from('exam_sessions').insert({
+      session_token: token, nombre, dni, email, twitch,
+      started_at: now, answers:{}, session_log: SESSION.session_log
+    });
+    if(sbErr) console.error('Supabase insert error:', sbErr);
   }
 
   renderExam();
   startTimer();
   startAutosave();
+  btn.disabled=false;
+  btn.innerHTML='<i class="fa-solid fa-play"></i> INICIAR EXAMEN';
 }
 
 // ════════════════════════════════════════════════════════
