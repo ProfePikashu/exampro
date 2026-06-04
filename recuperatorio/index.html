@@ -176,6 +176,10 @@ input[type=text],input[type=email]{height:38px;resize:none}
 }
 .opt-label.selected{border-color:var(--blue);background:#1e3a5f}
 
+/* ── EDIT INPUT ──────────────────────────────────────── */
+.edit-input{width:100%;background:var(--deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;box-sizing:border-box;}
+.edit-input:focus{border-color:var(--blue)}
+
 /* ── DATOS GRID ──────────────────────────────────────── */
 .datos-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:520px){.datos-grid{grid-template-columns:1fr}}
@@ -512,6 +516,63 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
         </div>
       </div>
 
+      <!-- Modal de confirmación de datos -->
+      <div id="confirm-modal" style="display:none;position:fixed;inset:0;background:#00000090;z-index:300;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:#111827;border:2px solid var(--blue);border-radius:16px;padding:28px;max-width:460px;width:100%;box-shadow:0 20px 60px #00000080;">
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:32px;margin-bottom:10px;">🔍</div>
+            <div style="font-size:18px;font-weight:700;color:#e2e8f0;">¿TODOS LOS DATOS SON CORRECTOS?</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px;">Verificá bien antes de iniciar. No podrás cambiarlos fácilmente después.</div>
+          </div>
+          <div id="confirm-datos" style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;"></div>
+          <div style="display:flex;gap:10px;">
+            <button onclick="confirmarDatosNo()"
+              style="flex:1;padding:12px;background:#1c0606;border:2px solid var(--red);border-radius:10px;color:#fca5a5;font-weight:700;font-size:14px;cursor:pointer;">
+              ✏️ NO, editar datos
+            </button>
+            <button onclick="confirmarDatosSi()"
+              style="flex:1;padding:12px;background:#052e16;border:2px solid #16a34a;border-radius:10px;color:#4ade80;font-weight:700;font-size:14px;cursor:pointer;">
+              ✅ SÍ, son correctos
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de edición de datos -->
+      <div id="edit-modal" style="display:none;position:fixed;inset:0;background:#00000090;z-index:300;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:#111827;border:2px solid var(--border);border-radius:16px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px #00000080;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <div style="font-size:15px;font-weight:700;color:#e2e8f0;">✏️ Editar mis datos</div>
+            <button onclick="cerrarEditModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
+            <div>
+              <div class="field-label">Nombre y Apellido <span class="req">*</span></div>
+              <input type="text" id="edit-nombre" class="edit-input" placeholder="Nombre completo">
+            </div>
+            <div>
+              <div class="field-label">DNI <span class="req">*</span></div>
+              <input type="text" id="edit-dni" class="edit-input" placeholder="Sin puntos" inputmode="numeric"
+                oninput="this.value=this.value.replace(/[.\s]/g,'')">
+            </div>
+            <div>
+              <div class="field-label">Correo electrónico <span class="req">*</span></div>
+              <input type="email" id="edit-email" class="edit-input" placeholder="tu@correo.com">
+            </div>
+            <div>
+              <div class="field-label">Usuario de Twitch</div>
+              <input type="text" id="edit-twitch" class="edit-input" placeholder="sin el @"
+                oninput="if(this.value.startsWith('@'))this.value=this.value.slice(1)">
+            </div>
+          </div>
+          <div id="edit-err" style="display:none;background:#1c0606;border:1px solid var(--red);border-radius:8px;padding:8px 12px;font-size:12px;color:#fca5a5;margin-bottom:12px;"></div>
+          <button onclick="guardarEdicion()" id="btn-edit-save"
+            style="width:100%;padding:12px;background:#1d4ed8;border:none;border-radius:10px;color:#fff;font-weight:700;font-size:14px;cursor:pointer;">
+            <i class="fa-solid fa-save"></i> Guardar cambios
+          </button>
+        </div>
+      </div>
+
       <!-- Pantalla de abandono -->
       <div id="abandon-screen">
         <div class="abandon-title"><i class="fa-solid fa-ban"></i> No podés continuar</div>
@@ -565,6 +626,8 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
      PASO 2: FORMULARIO DE EXAMEN
 ══════════════════════════════════════════════════════ -->
 <div id="step2">
+  <!-- Banner de datos del alumno -->
+  <div id="datos-banner" style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:16px;"></div>
   <div class="section-nav" id="section-nav"></div>
   <div id="questions-root"></div>
 
@@ -1156,6 +1219,20 @@ async function iniciarExamen(){
   btn.disabled=true;
   btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
 
+  // ── Mostrar confirmación de datos antes de arrancar ──────
+  // La lógica real se ejecuta en confirmarDatosSi()
+  mostrarConfirmacion({
+    nombre, dni, email, twitch,
+    continuar: async () => {
+      btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Iniciando...';
+      await _arrancarExamen(nombre, dni, email, twitch, btn);
+    }
+  });
+}
+
+// Lógica real de inicio (se llama desde confirmarDatosSi)
+async function _arrancarExamen(nombre, dni, email, twitch, btn){
+
   // ── Buscar sesión existente en Supabase por DNI ──────────
   // Esto permite continuar desde otro dispositivo/navegador
   if(sb){
@@ -1321,6 +1398,89 @@ async function guardarYCerrar(){
   document.getElementById('main').appendChild(closeDiv);
 }
 
+// ── Modal confirmación de datos ──────────────────────────
+let _pendingSessionData = null; // datos pendientes de confirmación
+
+function mostrarConfirmacion(datos){
+  _pendingSessionData = datos;
+  const el = document.getElementById('confirm-datos');
+  el.innerHTML = [
+    ['👤 Nombre',    datos.nombre],
+    ['🪪 DNI',       datos.dni],
+    ['📧 Email',     datos.email],
+    ['🎮 Twitch',    datos.twitch ? '@'+datos.twitch : '(no ingresado)'],
+  ].map(([label, val])=>`
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="color:var(--muted);font-size:11px;width:80px;flex-shrink:0;">${label}</span>
+      <span style="color:var(--text);font-weight:600;">${val||'—'}</span>
+    </div>`).join('');
+  const modal = document.getElementById('confirm-modal');
+  modal.style.display = 'flex';
+}
+
+function confirmarDatosNo(){
+  document.getElementById('confirm-modal').style.display = 'none';
+  _pendingSessionData = null;
+  // Volver al form de datos para editar
+  const btn = document.getElementById('btn-iniciar');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-play"></i> INICIAR EXAMEN';
+}
+
+async function confirmarDatosSi(){
+  if(!_pendingSessionData) return;
+  document.getElementById('confirm-modal').style.display = 'none';
+  await _pendingSessionData.continuar();
+  _pendingSessionData = null;
+}
+
+// ── Modal edición de datos ────────────────────────────────
+function abrirEditModal(){
+  if(!SESSION) return;
+  document.getElementById('edit-nombre').value = SESSION.nombre || '';
+  document.getElementById('edit-dni').value    = SESSION.dni    || '';
+  document.getElementById('edit-email').value  = SESSION.email  || '';
+  document.getElementById('edit-twitch').value = SESSION.twitch || '';
+  document.getElementById('edit-err').style.display = 'none';
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function cerrarEditModal(){
+  document.getElementById('edit-modal').style.display = 'none';
+}
+
+async function guardarEdicion(){
+  const nombre = document.getElementById('edit-nombre').value.trim();
+  const dni    = document.getElementById('edit-dni').value.trim();
+  const email  = document.getElementById('edit-email').value.trim();
+  const twitch = document.getElementById('edit-twitch').value.trim().replace(/^@/,'');
+  const err    = document.getElementById('edit-err');
+  const btn    = document.getElementById('btn-edit-save');
+
+  // Validaciones
+  if(!nombre||!dni||!email){ err.textContent='Nombre, DNI y email son obligatorios.'; err.style.display='block'; return; }
+  if(!/^[A-ZÁÉÍÓÚÜÑ]/u.test(nombre)){ err.textContent='El nombre debe comenzar con mayúscula.'; err.style.display='block'; return; }
+  if(!/^\d{7,8}$/.test(dni)||parseInt(dni)<1000000){ err.textContent='DNI inválido (7-8 dígitos sin puntos).'; err.style.display='block'; return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent='Email inválido.'; err.style.display='block'; return; }
+  err.style.display='none';
+
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+  SESSION.nombre = nombre; SESSION.dni = dni; SESSION.email = email; SESSION.twitch = twitch;
+  saveSessionLocal(SESSION);
+
+  if(sb){
+    const {error} = await sb.from('exam_sessions').update({nombre,dni,email,twitch}).eq('session_token',SESSION.session_token);
+    if(error) console.error('Edit update error:',error.message);
+    else console.log('✓ Datos actualizados en Supabase');
+  }
+
+  btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-save"></i> Guardar cambios';
+  cerrarEditModal();
+  renderDatosBanner(); // actualizar el banner con los nuevos datos
+  setKonState && setKonState('happy');
+}
+
 // ── Ir a última consigna respondida ──────────────────────
 function tieneRespuesta(q){
   const id = qId(q.n);
@@ -1435,10 +1595,39 @@ let totalQuestions = 0;
 
 function qId(n){ return 'q_'+String(n).replace('.','_'); }
 
+function renderDatosBanner(){
+  const el = document.getElementById('datos-banner');
+  if(!el || !SESSION) return;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;flex:1;min-width:0;">
+        <span style="font-size:12px;color:var(--muted);background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:5px 10px;">
+          👤 <strong style="color:var(--text)">${SESSION.nombre||'—'}</strong>
+        </span>
+        <span style="font-size:12px;color:var(--muted);background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:5px 10px;">
+          🪪 <strong style="color:var(--text)">${SESSION.dni||'—'}</strong>
+        </span>
+        <span style="font-size:12px;color:var(--muted);background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:5px 10px;">
+          📧 <strong style="color:var(--text)">${SESSION.email||'—'}</strong>
+        </span>
+        ${SESSION.twitch?`<span style="font-size:12px;color:var(--muted);background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:5px 10px;">
+          🎮 <strong style="color:#c084fc">@${SESSION.twitch}</strong>
+        </span>`:''}
+      </div>
+      <button onclick="abrirEditModal()"
+        style="flex-shrink:0;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;padding:5px 12px;cursor:pointer;transition:all .15s;"
+        onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue-l)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+        ✏️ Editar mis datos
+      </button>
+    </div>`;
+}
+
 function renderExam(){
   document.getElementById('step1').style.display = 'none';
   document.getElementById('step2').style.display = 'block';
   document.getElementById('side-panel').style.display = 'flex';
+  renderDatosBanner();
   root.innerHTML = '';
   snav.innerHTML = '';
   totalQuestions = 0;
