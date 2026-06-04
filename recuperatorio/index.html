@@ -620,6 +620,242 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
   <i class="fa-solid fa-chevron-up"></i>
 </button>
 
+<!-- ══════════════════════════════════════════════════════
+     PELUSITA — asistente del recuperatorio (lado izquierdo)
+══════════════════════════════════════════════════════ -->
+<style>
+.kon-wrapper{position:fixed;bottom:20px;left:20px;z-index:7000;display:flex;flex-direction:column;align-items:center;gap:8px;user-select:none;}
+.kon-bubble{background:#fff;color:#1a1a2e;font-size:12px;font-weight:700;font-family:sans-serif;padding:7px 13px;border-radius:12px;border:2px solid #f97316;position:relative;opacity:0;transform:translateY(8px) scale(.88);transition:opacity .25s,transform .25s;max-width:180px;white-space:normal;text-align:center;line-height:1.4;pointer-events:none;box-shadow:0 4px 12px rgba(249,115,22,.2);}
+.kon-bubble.show{opacity:1;transform:translateY(0) scale(1);}
+.kon-bubble::after{content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#f97316;}
+.kon-bubble::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#fff;z-index:1;}
+.kon-dialog{background:linear-gradient(145deg,#1a0a2e,#2d1060);border:2px solid #f97316;border-radius:16px;padding:16px;width:280px;font-family:sans-serif;font-size:13px;color:#fef3c7;line-height:1.55;box-shadow:0 12px 40px rgba(249,115,22,.3);display:none;position:relative;animation:konDialogIn .25s cubic-bezier(.34,1.56,.64,1);}
+@keyframes konDialogIn{from{opacity:0;transform:scale(.85) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.kon-dialog.show{display:block;}
+.kon-dialog-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(249,115,22,.3);}
+.kon-dialog-avatar{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(249,115,22,.4));}
+.kon-dialog-name{font-weight:800;font-size:14px;color:#fed7aa;letter-spacing:.02em;}
+.kon-dialog-close{margin-left:auto;cursor:pointer;color:#9a7050;font-size:18px;line-height:1;transition:color .15s,transform .15s;}
+.kon-dialog-close:hover{color:#fff;transform:rotate(90deg);}
+.kon-dialog-msg{white-space:pre-wrap;margin-bottom:12px;color:#fde68a;font-size:12.5px;line-height:1.6;}
+.kon-dialog-opts{display:flex;flex-direction:column;gap:6px;}
+.kon-opt{background:rgba(249,115,22,.12);border:1.5px solid rgba(249,115,22,.35);color:#fed7aa;padding:7px 11px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:background .15s,border-color .15s,transform .12s;font-family:sans-serif;width:100%;}
+.kon-opt:hover{background:rgba(249,115,22,.28);border-color:#f97316;color:#fff;transform:translateX(3px);}
+.kon-opt-wa{background:rgba(37,211,102,.12)!important;border-color:rgba(37,211,102,.4)!important;color:#86efac!important;}
+.kon-opt-wa:hover{background:rgba(37,211,102,.25)!important;border-color:#25d366!important;}
+.kon-opt-mail{background:rgba(59,130,246,.12)!important;border-color:rgba(59,130,246,.4)!important;color:#93c5fd!important;}
+.kon-opt-mail:hover{background:rgba(59,130,246,.25)!important;border-color:#3b82f6!important;}
+.kon-char{width:110px;height:110px;position:relative;cursor:pointer;transform-origin:bottom center;}
+.kon-char:hover .kon-img{filter:drop-shadow(0 0 14px rgba(249,115,22,.75)) brightness(1.08);}
+.kon-img{width:110px;height:110px;object-fit:contain;transition:opacity .2s,filter .2s;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));}
+.kon-img.switching{opacity:0;}
+@keyframes konFloat{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-8px) rotate(-1.5deg)}70%{transform:translateY(-5px) rotate(1deg)}}
+@keyframes konBounce{0%{transform:translateY(0) scale(1) rotate(0)}20%{transform:translateY(-20px) scale(1.1) rotate(-6deg)}45%{transform:translateY(-28px) scale(1.08) rotate(5deg)}65%{transform:translateY(-10px) scale(1.04) rotate(-3deg)}80%{transform:translateY(-3px) scale(.97)}100%{transform:translateY(0) scale(1) rotate(0)}}
+@keyframes konShake{0%,100%{transform:translateX(0) rotate(0)}10%{transform:translateX(-10px) rotate(-5deg)}25%{transform:translateX(10px) rotate(5deg)}40%{transform:translateX(-8px) rotate(-4deg)}55%{transform:translateX(8px) rotate(4deg)}70%{transform:translateX(-4px) rotate(-2deg)}85%{transform:translateX(4px) rotate(2deg)}}
+@keyframes konWobble{0%,100%{transform:rotate(0) scale(1)}20%{transform:rotate(-5deg) scale(1.04)}50%{transform:rotate(5deg) scale(1.04)}75%{transform:rotate(-3deg) scale(1.02)}}
+@keyframes konWave{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-6px) rotate(-4deg)}50%{transform:translateY(-10px) rotate(3deg)}75%{transform:translateY(-6px) rotate(-2deg)}}
+@keyframes konPulseGlow{0%,100%{filter:drop-shadow(0 4px 8px rgba(0,0,0,.35))}50%{filter:drop-shadow(0 0 18px rgba(249,115,22,.7)) drop-shadow(0 4px 8px rgba(0,0,0,.3))}}
+</style>
+
+<div id="konWrapper" class="kon-wrapper">
+  <div id="konDialog" class="kon-dialog">
+    <div class="kon-dialog-header">
+      <img src="pelusita/wave.png" class="kon-dialog-avatar" alt="Pelusita">
+      <span class="kon-dialog-name">Pelusita</span>
+      <span class="kon-dialog-close" onclick="konCloseDialog()">✕</span>
+    </div>
+    <div id="konDialogMsg" class="kon-dialog-msg"></div>
+    <div id="konDialogOpts" class="kon-dialog-opts"></div>
+  </div>
+  <div id="konBubble" class="kon-bubble"></div>
+  <div id="konChar" class="kon-char" onclick="konToggleDialog()" title="Pelusita — Click para ayuda">
+    <img id="konImg" class="kon-img" src="pelusita/idle.png" alt="Pelusita">
+  </div>
+</div>
+
+<script>
+(function(){
+const IMGS={idle:'pelusita/idle.png',happy:'pelusita/happy.png',horror:'pelusita/horror.png',see:'pelusita/see.png',wave:'pelusita/wave.png',welcome:'pelusita/welcome.png',arriving:'pelusita/arriving.gif'};
+const ARRIVING_MS=2800;
+const PHRASES={
+  idle:['nya~ 🐱','...purr...','¿me llamaste? 👀','*bosteza*','nyaa ♡','...zzz...','*se acomoda* 🐾','¡aquí estoy! nya~'],
+  happy:['NYA NYA!! 🎉','¡purrrfecto! ♡','*ronronea* 💕','¡lo lograste, nya~! ✨','*da saltitos* 🐾'],
+  horror:['NYA?! 😱','*se eriza* !!','¡¡nyanyan!! 😨','*esconde las orejas* 💦'],
+  see:['nya... 🤔','*inclina la cabeza*','hmm... purr...','¿seguro, nya~?'],
+  wave:['¡NYA! ♡ ¿en qué te ayudo?','¡hola hola! 🐾','*agita la patita* nya~'],
+  welcome:['¡NYA NYA! ♡♡ ¡hola!','*ronronea* hola~ 🐱','¡¡te estaba esperando!! ♡'],
+};
+const ANIMS={
+  idle:'konFloat 4s ease-in-out infinite',
+  happy:'konBounce .8s cubic-bezier(.34,1.56,.64,1) forwards',
+  horror:'konShake .6s ease forwards',
+  see:'konWobble .8s ease forwards',
+  wave:'konWave 1s ease-in-out forwards',
+  welcome:'konBounce .9s cubic-bezier(.34,1.56,.64,1) forwards',
+};
+
+// ── Menús del recuperatorio ──
+const MENUS={
+  main:[
+    {text:'⏱ ¿Cuánto tiempo tengo?',        action:()=>konMsg('timer')},
+    {text:'💾 ¿Cómo guardo y retomo?',       action:()=>konMsg('guardar')},
+    {text:'📱 Cambié de dispositivo',         action:()=>konMsg('dispositivo')},
+    {text:'⚡ ¿Qué son los prácticos (70%)?',action:()=>konMsg('practicos')},
+    {text:'🚫 No me deja enviar',             action:()=>konMsg('enviar')},
+    {text:'🆘 Contactar al docente',          action:()=>konMsg('soporte')},
+    {text:'¡nya, gracias! ♡',                action:()=>konCloseDialog()},
+  ],
+  timer:{
+    msg:'⏱ TIEMPO — 48 HORAS\n\n*saca la patita* nya~\n\nUna vez que hacés clic en "INICIAR EXAMEN" el contador arranca y no se detiene.\n\n⚠️ No para si cerrás el navegador, apagás la compu o te vas a dormir.\n\nEl tiempo corre en el servidor, no en tu dispositivo. ♡',
+    opts:[{text:'¿Y si se me acaba el tiempo?',action:()=>konMsg('tiempo_fin')},{text:'← Volver',action:()=>konMsg('back')}]
+  },
+  tiempo_fin:{
+    msg:'😿 SI SE ACABA EL TIEMPO\n\nEl formulario se bloquea automáticamente y ya no podés editar nada.\n\nSi creés que fue un error técnico, contactá al docente lo antes posible.\n\n¡Organizate bien los tiempos, nya~! ♡',
+    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+  },
+  guardar:{
+    msg:'💾 GUARDAR Y RETOMAR\n\n*ronronea* ¡fácil, nya~! 🐾\n\nUsá el botón verde 💾 del panel derecho para guardar y cerrar sin perder nada.\n\nCuando volvás, abrí el mismo link y ponés tu correo + DNI — Pelusita te va a encontrar ♡',
+    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+  },
+  dispositivo:{
+    msg:'📱 CAMBIÉ DE DISPOSITIVO\n\n*agita la patita* nya~!\n\n¡No hay problema! Abrí el mismo link en el nuevo dispositivo.\n\nEn la pantalla inicial completá:\n📧 Tu correo electrónico\n🪪 Tu DNI\n\nHacé clic en INICIAR EXAMEN y Pelusita recupera tu sesión automáticamente ♡\n\n¡Tus respuestas estarán todas ahí! purr~',
+    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+  },
+  practicos:{
+    msg:'⚡ EJERCICIOS PRÁCTICOS\n\n*se concentra mucho* nya~\n\nHay 7 ejercicios prácticos, uno por cada clase. Los vas a reconocer por el recuadro dorado con el rayo ⚡.\n\nEsos 7 representan el 70% de la nota. Para APROBAR necesitás tener al menos 5 bien respondidos.\n\nLas demás preguntas (desarrollo, opciones) son el 30% restante. ¡No las ignores! ♡',
+    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+  },
+  enviar:{
+    msg:'🚫 NO ME DEJA ENVIAR\n\n*inclina la cabeza* nya...\n\nEl botón de enviar solo funciona si completaste TODAS las consignas.\n\nEl formulario te muestra cuántas faltan y hace scroll a la primera vacía.\n\n💡 Tip: usá el botón 📍 del panel derecho para ir directo a la consigna donde lo dejaste ♡',
+    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+  },
+  soporte:{
+    msg:'🆘 CONTACTAR AL DOCENTE\n\n*agita la patita con urgencia* nya~!\n\n¿Tenés un problema técnico que no podés resolver?\n\n¡Contactate ahora! ♡',
+    opts:[
+      {text:'💬 WhatsApp (más rápido)',  action:()=>{ window.open('https://wa.me/5492236689580','_blank'); },cls:'kon-opt-wa'},
+      {text:'✉️ Email',                  action:()=>{ window.open('mailto:acoria@frba.utn.edu.ar','_blank'); },cls:'kon-opt-mail'},
+      {text:'← Volver',                  action:()=>konMsg('back')},
+    ]
+  },
+  back:[
+    {text:'← Volver al menú',action:()=>konOpenMain()},
+  ],
+};
+
+let _timer=null,_idleTimer=null,_open=false;
+const rnd=arr=>arr[Math.floor(Math.random()*arr.length)];
+
+function pelusitaImg(state){
+  const img=document.getElementById('konImg'); if(!img) return;
+  const src=IMGS[state]||IMGS.idle;
+  if(img.src.endsWith(src.split('/').pop())) return;
+  img.classList.add('switching');
+  setTimeout(()=>{ img.src=src; img.classList.remove('switching'); },100);
+}
+
+window.setKonState=function(state){
+  const char=document.getElementById('konChar');
+  const bubble=document.getElementById('konBubble');
+  if(!char||!bubble) return;
+  clearTimeout(_timer); clearTimeout(_idleTimer);
+  pelusitaImg(state);
+  char.style.animation='none'; void char.offsetHeight;
+  char.style.animation=ANIMS[state]||ANIMS.idle;
+  if(state!=='idle'){
+    bubble.textContent=rnd(PHRASES[state]||PHRASES.idle);
+    bubble.classList.add('show');
+    _timer=setTimeout(()=>setKonState('idle'),3500);
+  } else {
+    bubble.classList.remove('show');
+    const img=document.getElementById('konImg');
+    if(img) img.style.animation='konPulseGlow 4s ease-in-out infinite';
+    _idleTimer=setTimeout(function tick(){
+      bubble.textContent=rnd(PHRASES.idle);
+      bubble.classList.add('show');
+      setTimeout(()=>bubble.classList.remove('show'),3000);
+      _idleTimer=setTimeout(tick,14000);
+    },7000);
+  }
+};
+
+function renderMenu(optsKey){
+  const opts=Array.isArray(MENUS[optsKey])?MENUS[optsKey]:(MENUS[optsKey]?.opts||MENUS.back);
+  const el=document.getElementById('konDialogOpts'); if(!el) return;
+  el.innerHTML=opts.map((o,i)=>
+    `<button class="kon-opt${o.cls?' '+o.cls:''}" data-ki="${i}">${o.text}</button>`
+  ).join('');
+  el.querySelectorAll('.kon-opt').forEach(btn=>{
+    btn.onclick=e=>{ e.stopPropagation(); opts[parseInt(btn.dataset.ki)].action(); };
+  });
+}
+
+function konMsg(key){
+  const def=MENUS[key];
+  if(!def) return;
+  if(Array.isArray(def)){
+    // Es un array de opciones directo (como 'back')
+    renderMenu(key);
+    return;
+  }
+  document.getElementById('konDialogMsg').textContent=def.msg||'';
+  const optsKey=def.opts?key:key;
+  document.getElementById('konDialogOpts').innerHTML='';
+  if(def.opts){
+    const el=document.getElementById('konDialogOpts');
+    el.innerHTML=def.opts.map((o,i)=>
+      `<button class="kon-opt${o.cls?' '+o.cls:''}" data-ki="${i}">${o.text}</button>`
+    ).join('');
+    el.querySelectorAll('.kon-opt').forEach(btn=>{
+      btn.onclick=e=>{ e.stopPropagation(); def.opts[parseInt(btn.dataset.ki)].action(); };
+    });
+  }
+  document.getElementById('konDialog').classList.add('show');
+  _open=true;
+  pelusitaImg('see');
+}
+
+function konOpenMain(){
+  document.getElementById('konDialogMsg').textContent='¡NYA! ♡ Soy Pelusita~\n\n¿En qué te puedo ayudar con el recuperatorio? 🐾';
+  renderMenu('main');
+  document.getElementById('konDialog').classList.add('show');
+  _open=true; pelusitaImg('wave');
+}
+
+window.konCloseDialog=function(){
+  document.getElementById('konDialog').classList.remove('show');
+  _open=false; pelusitaImg('idle');
+};
+
+window.konToggleDialog=function(){
+  if(_open){ konCloseDialog(); }
+  else{
+    pelusitaImg('welcome');
+    const char=document.getElementById('konChar');
+    if(char){char.style.animation='none';void char.offsetHeight;char.style.animation=ANIMS.wave;}
+    setTimeout(konOpenMain,300);
+  }
+};
+
+// Arriving entrance
+function konArriving(){
+  const wrap=document.getElementById('konWrapper');
+  const img=document.getElementById('konImg');
+  const char=document.getElementById('konChar');
+  if(!wrap||!img||!char) return;
+  wrap.style.transition='none'; wrap.style.transform='translateY(160px)'; wrap.style.opacity='0';
+  img.src=IMGS.arriving; char.style.animation='none';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    wrap.style.transition='transform 0.55s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s ease';
+    wrap.style.transform='translateY(0)'; wrap.style.opacity='1';
+  }));
+  setTimeout(()=>{ wrap.style.transition=''; wrap.style.transform=''; wrap.style.opacity=''; setKonState('idle'); },ARRIVING_MS);
+}
+
+document.addEventListener('DOMContentLoaded',konArriving);
+document.addEventListener('click',e=>{ if(_open&&!e.target.closest('#konWrapper')) konCloseDialog(); });
+})();
+</script>
+
 <script>
 // ════════════════════════════════════════════════════════
 //  CONFIG — completar antes de publicar
