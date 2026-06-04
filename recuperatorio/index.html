@@ -477,7 +477,8 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
         </div>
         <div>
           <div class="field-label">DNI <span class="req">*</span></div>
-          <input type="text" id="f-dni" placeholder="Sin puntos ni espacios" inputmode="numeric">
+          <input type="text" id="f-dni" placeholder="Sin puntos ni espacios" inputmode="numeric"
+            oninput="this.value=this.value.replace(/[.\s]/g,'')">
         </div>
         <div>
           <div class="field-label">Correo electrónico <span class="req">*</span></div>
@@ -485,7 +486,8 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
         </div>
         <div>
           <div class="field-label">Usuario de Twitch</div>
-          <input type="text" id="f-twitch" placeholder="sin el @">
+          <input type="text" id="f-twitch" placeholder="sin el @"
+            oninput="if(this.value.startsWith('@'))this.value=this.value.slice(1)">
         </div>
       </div>
 
@@ -598,6 +600,17 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
     <div class="side-btn-tooltip">
       <strong>💾 Guardar y cerrar</strong>
       Utilizá este botón solo si debés retirarte por un momento. Guardará tu progreso y podrás reanudarlo desde este mismo navegador u otro dispositivo. Recordá ingresar con tu <b>correo electrónico</b> y <b>DNI</b> con los que te registraste en el curso.
+    </div>
+  </button>
+
+  <!-- IR A ÚLTIMA CONSIGNA -->
+  <button class="side-btn"
+    style="background:#1e3a5f;border-color:#3b82f6;color:#93c5fd;"
+    onclick="irUltimaConsigna()">
+    <i class="fa-solid fa-location-arrow"></i>
+    <div class="side-btn-tooltip">
+      <strong>📍 Ir a donde lo dejaste</strong>
+      Te lleva a la primera consigna sin responder luego de la última que completaste, para que puedas continuar desde ahí sin tener que buscarla manualmente.
     </div>
   </button>
 
@@ -870,8 +883,39 @@ async function iniciarExamen(){
   const err    = document.getElementById('err-datos');
   const btn    = document.getElementById('btn-iniciar');
 
-  if(!nombre||!dni||!email){ err.textContent='Nombre, DNI y correo electrónico son obligatorios.'; err.style.display='block'; return; }
-  if(decl !== 'Acepto'){ err.textContent='Debés aceptar la declaración jurada para continuar.'; err.style.display='block'; return; }
+  // ── Validaciones de campos ────────────────────────────
+  if(!nombre||!dni||!email){
+    err.textContent='Nombre, DNI y correo electrónico son obligatorios.'; err.style.display='block'; return;
+  }
+  // Nombre: primera letra mayúscula
+  if(!/^[A-ZÁÉÍÓÚÜÑ]/u.test(nombre)){
+    err.textContent='El nombre debe comenzar con una letra mayúscula.'; err.style.display='block';
+    document.getElementById('f-nombre').focus(); return;
+  }
+  // DNI: solo dígitos, 7 u 8 cifras, sin puntos
+  const dniClean = dni.replace(/\./g,'');
+  if(dniClean !== dni){
+    err.textContent='El DNI no debe tener puntos. Escribilo sin puntos (ej: 38471161).'; err.style.display='block';
+    document.getElementById('f-dni').value = dniClean;
+    document.getElementById('f-dni').focus(); return;
+  }
+  if(!/^\d{7,8}$/.test(dni) || parseInt(dni)<1000000 || parseInt(dni)>99999999){
+    err.textContent='El DNI debe ser un número de 7 u 8 dígitos sin puntos (ej: 38471161).'; err.style.display='block';
+    document.getElementById('f-dni').focus(); return;
+  }
+  // Twitch: sin @
+  if(twitch && twitch.startsWith('@')){
+    document.getElementById('f-twitch').value = twitch.slice(1);
+    // No bloquea, solo corrige silenciosamente
+  }
+  // Email: debe tener @
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    err.textContent='El correo electrónico no es válido. Verificá que tenga el formato usuario@dominio.com'; err.style.display='block';
+    document.getElementById('f-email').focus(); return;
+  }
+  if(decl !== 'Acepto'){
+    err.textContent='Debés aceptar la declaración jurada para continuar.'; err.style.display='block'; return;
+  }
   err.style.display='none';
   btn.disabled=true;
   btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Verificando...';
@@ -1039,6 +1083,43 @@ async function guardarYCerrar(){
     <p style="font-size:12px;color:#4ade80;line-height:1.6;">Cuando quieras continuar, abrí el mismo link, ingresá con tu <strong>correo electrónico</strong> y <strong>DNI</strong> y retomá donde lo dejaste.</p>
     <p style="font-size:11px;color:#166534;margin-top:16px;">Tiempo restante: <strong>${formatMs(Math.max(0, remaining))}</strong></p>`;
   document.getElementById('main').appendChild(closeDiv);
+}
+
+// ── Ir a última consigna respondida ──────────────────────
+function tieneRespuesta(q){
+  const id = qId(q.n);
+  if(q.type==='dev'){
+    const ta=document.getElementById(id); return ta&&ta.value.trim().length>0;
+  }
+  if(q.type==='list'||q.type==='list_prefilled') return ltGetValue(id).length>0;
+  if(q.type==='radio'||q.type==='tf') return !!document.querySelector(`input[name="${id}"]:checked`);
+  if(q.type==='check')  return !!document.querySelector(`input[name="${id}[]"]:checked`);
+  if(q.type==='draw')   return true; // dibujo cuenta como respondido
+  return false;
+}
+
+function irUltimaConsigna(){
+  const allQs = SECTIONS.flatMap(sec=>sec.qs);
+  let lastIdx = -1;
+  allQs.forEach((q,i)=>{ if(tieneRespuesta(q)) lastIdx=i; });
+
+  let target;
+  if(lastIdx === -1){
+    target = allQs[0]; // nada respondido → primera
+  } else if(lastIdx === allQs.length-1){
+    target = allQs[lastIdx]; // todo respondido → última
+  } else {
+    target = allQs[lastIdx+1]; // primera sin responder después de la última respondida
+  }
+  if(!target) return;
+  const el = document.getElementById('qb_'+qId(target.n));
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  // Highlight breve
+  const orig = el.style.outline;
+  el.style.transition='outline .1s';
+  el.style.outline='2px solid var(--blue)';
+  setTimeout(()=>{ el.style.outline=orig||''; }, 2000);
 }
 
 function showExpired(){
@@ -1709,6 +1790,21 @@ async function submitExamen(){
   err.style.display='none';
 
   if(!SESSION){ err.textContent='Sesión no encontrada. Recargá la página.'; err.style.display='block'; return; }
+
+  // Validar que cada consigna tenga al menos un caracter
+  const faltantes = [];
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    if(q.type==='draw') return; // dibujo es opcional
+    if(!tieneRespuesta(q)) faltantes.push(q.n);
+  }));
+  if(faltantes.length>0){
+    err.textContent=`Hay ${faltantes.length} consigna${faltantes.length>1?'s':''} sin responder (P${faltantes.slice(0,5).join(', P')}${faltantes.length>5?'…':''}). Completá todas antes de enviar.`;
+    err.style.display='block';
+    // Scroll a la primera faltante
+    const firstEl=document.getElementById('qb_'+qId(faltantes[0]));
+    if(firstEl) firstEl.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
 
   btn.disabled=true;
   btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
