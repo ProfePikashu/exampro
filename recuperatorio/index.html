@@ -1487,10 +1487,20 @@ function tieneRespuesta(q){
   if(q.type==='dev'){
     const ta=document.getElementById(id); return ta&&ta.value.trim().length>0;
   }
-  if(q.type==='list'||q.type==='list_prefilled') return ltGetValue(id).length>0;
+  if(q.type==='list'){
+    return ltGetValue(id).length>0;
+  }
+  if(q.type==='list_prefilled'){
+    // Solo cuenta como respondida si al menos UN desarrollo está escrito
+    // (los títulos readonly NO cuentan como respuesta del alumno)
+    return ltGetAllRows(id).some(row=>{
+      const ta=row.querySelector('textarea');
+      return ta&&ta.value.trim().length>0;
+    });
+  }
   if(q.type==='radio'||q.type==='tf') return !!document.querySelector(`input[name="${id}"]:checked`);
   if(q.type==='check')  return !!document.querySelector(`input[name="${id}[]"]:checked`);
-  if(q.type==='draw')   return true; // dibujo cuenta como respondido
+  if(q.type==='draw')   return true;
   return false;
 }
 
@@ -2118,8 +2128,19 @@ function collectAnswers(){
     if(q.type==='dev'){
       const ta = document.getElementById(id);
       if(ta) ans[id] = ta.value;
-    } else if(q.type==='list'||q.type==='list_prefilled'){
+    } else if(q.type==='list'){
       ans[id] = ltGetValue(id);
+    } else if(q.type==='list_prefilled'){
+      // Solo guardar los DESARROLLOS por posición (los títulos son readonly y no son respuesta)
+      // Formato: devPos0|||devPos1|||... (vacío si no escribió nada en ese comando)
+      const rows = ltGetAllRows(id);
+      const devs = rows.map(row=>{
+        const title = row.querySelector('.lt-title-input')?.value.trim()||'';
+        const dev   = row.querySelector('textarea')?.value.trim()||'';
+        return title+'||'+dev; // siempre title||dev para restaurar por posición
+      });
+      // Solo guardar si al menos uno tiene desarrollo, si no dejar vacío
+      ans[id] = devs.some(d=>d.includes('||')&&d.split('||')[1]) ? devs.join('|||') : '';
     } else if(q.type==='tf'||q.type==='radio'){
       const checked = document.querySelector(`input[name="${id}"]:checked`);
       if(checked) ans[id] = checked.value;
@@ -2144,8 +2165,25 @@ function restoreAnswers(){
     if(q.type==='dev'){
       const ta = document.getElementById(id);
       if(ta){ ta.value=val; ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; }
-    } else if(q.type==='list'||q.type==='list_prefilled'){
+    } else if(q.type==='list'){
       ltSetValue(id, val);
+    } else if(q.type==='list_prefilled'){
+      // Restaurar solo los desarrollos por posición (formato: title||dev|||title||dev|||...)
+      const items = val.split('|||');
+      const rows  = ltGetAllRows(id);
+      items.forEach((item, i)=>{
+        const sepIdx = item.indexOf('||');
+        const dev = sepIdx>=0 ? item.slice(sepIdx+2).trim() : '';
+        const row = rows[i]; if(!row||!dev) return;
+        const ta = row.querySelector('textarea');
+        if(ta){
+          ta.value=dev;
+          ltOnDevInput(ta,row.id);
+          const area=document.getElementById('ltdev_'+row.id);
+          if(area) area.style.display='block';
+          row.querySelector('.lt-dev-toggle')?.classList.add('open','has-content');
+        }
+      });
     } else if(q.type==='tf'||q.type==='radio'){
       const input = document.querySelector(`input[name="${id}"][value="${val.replace(/"/g,'\\"')}"]`);
       if(input){ input.checked=true; input.closest('.opt-label')?.classList.add('selected'); }
