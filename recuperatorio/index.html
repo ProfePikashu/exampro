@@ -770,34 +770,34 @@ const MENUS={
   ],
   timer:{
     msg:'⏱ TIEMPO — 48 HORAS\n\n*saca la patita* nya~\n\nUna vez que hacés clic en "INICIAR EXAMEN" el contador arranca y no se detiene.\n\n⚠️ No para si cerrás el navegador, apagás la compu o te vas a dormir.\n\nEl tiempo corre en el servidor, no en tu dispositivo. ♡',
-    opts:[{text:'¿Y si se me acaba el tiempo?',action:()=>konMsg('tiempo_fin')},{text:'← Volver',action:()=>konMsg('back')}]
+    opts:[{text:'¿Y si se me acaba el tiempo?',action:()=>konMsg('tiempo_fin')},{text:'← Volver',action:()=>konOpenMain()}]
   },
   tiempo_fin:{
     msg:'😿 SI SE ACABA EL TIEMPO\n\nEl formulario se bloquea automáticamente y ya no podés editar nada.\n\nSi creés que fue un error técnico, contactá al docente lo antes posible.\n\n¡Organizate bien los tiempos, nya~! ♡',
-    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+    opts:[{text:'← Volver',action:()=>konOpenMain()}]
   },
   guardar:{
     msg:'💾 GUARDAR Y RETOMAR\n\n*ronronea* ¡fácil, nya~! 🐾\n\nUsá el botón verde 💾 del panel derecho para guardar y cerrar sin perder nada.\n\nCuando volvás, abrí el mismo link y ponés tu correo + DNI — Pelusita te va a encontrar ♡',
-    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+    opts:[{text:'← Volver',action:()=>konOpenMain()}]
   },
   dispositivo:{
     msg:'📱 CAMBIÉ DE DISPOSITIVO\n\n*agita la patita* nya~!\n\n¡No hay problema! Abrí el mismo link en el nuevo dispositivo.\n\nEn la pantalla inicial completá:\n📧 Tu correo electrónico\n🪪 Tu DNI\n\nHacé clic en INICIAR EXAMEN y Pelusita recupera tu sesión automáticamente ♡\n\n¡Tus respuestas estarán todas ahí! purr~',
-    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+    opts:[{text:'← Volver',action:()=>konOpenMain()}]
   },
   practicos:{
     msg:'⚡ EJERCICIOS PRÁCTICOS\n\n*se concentra mucho* nya~\n\nHay 7 ejercicios prácticos, uno por cada clase. Los vas a reconocer por el recuadro dorado con el rayo ⚡.\n\nEsos 7 representan el 70% de la nota. Para APROBAR necesitás tener al menos 5 bien respondidos.\n\nLas demás preguntas (desarrollo, opciones) son el 30% restante. ¡No las ignores! ♡',
-    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+    opts:[{text:'← Volver',action:()=>konOpenMain()}]
   },
   enviar:{
     msg:'🚫 NO ME DEJA ENVIAR\n\n*inclina la cabeza* nya...\n\nEl botón de enviar solo funciona si completaste TODAS las consignas.\n\nEl formulario te muestra cuántas faltan y hace scroll a la primera vacía.\n\n💡 Tip: usá el botón 📍 del panel derecho para ir directo a la consigna donde lo dejaste ♡',
-    opts:[{text:'← Volver',action:()=>konMsg('back')}]
+    opts:[{text:'← Volver',action:()=>konOpenMain()}]
   },
   soporte:{
     msg:'🆘 CONTACTAR AL DOCENTE\n\n*agita la patita con urgencia* nya~!\n\n¿Tenés un problema técnico que no podés resolver?\n\n¡Contactate ahora! ♡',
     opts:[
       {text:'💬 WhatsApp (más rápido)',  action:()=>{ window.open('https://wa.me/5492236689580','_blank'); },cls:'kon-opt-wa'},
       {text:'✉️ Email',                  action:()=>{ window.open('mailto:acoria@frba.utn.edu.ar','_blank'); },cls:'kon-opt-mail'},
-      {text:'← Volver',                  action:()=>konMsg('back')},
+      {text:'← Volver',                  action:()=>konOpenMain()},
     ]
   },
   back:[
@@ -917,6 +917,26 @@ function konArriving(){
 document.addEventListener('DOMContentLoaded',konArriving);
 document.addEventListener('click',e=>{ if(_open&&!e.target.closest('#konWrapper')) konCloseDialog(); });
 })();
+
+// Función global para que el form muestre errores via Pelusita
+window.pelusitaError = function(msg){
+  // Animación de horror
+  window.setKonState && window.setKonState('horror');
+  // Mostrar mensaje en el diálogo
+  const dlg = document.getElementById('konDialog');
+  const msgEl = document.getElementById('konDialogMsg');
+  const optsEl = document.getElementById('konDialogOpts');
+  if(!dlg||!msgEl||!optsEl) return;
+  msgEl.textContent = msg;
+  optsEl.innerHTML = `
+    <button class="kon-opt" onclick="konCloseDialog();irUltimaConsigna()">
+      📍 Ir a la primera consigna faltante
+    </button>
+    <button class="kon-opt" onclick="konCloseDialog()" style="opacity:.7;">
+      😿 Entendido, la busco yo
+    </button>`;
+  dlg.classList.add('show');
+};
 </script>
 
 <script>
@@ -2287,11 +2307,13 @@ async function submitExamen(){
     if(!tieneRespuesta(q)) faltantes.push(q.n);
   }));
   if(faltantes.length>0){
-    err.textContent=`Hay ${faltantes.length} consigna${faltantes.length>1?'s':''} sin responder (P${faltantes.slice(0,5).join(', P')}${faltantes.length>5?'…':''}). Completá todas antes de enviar.`;
-    err.style.display='block';
+    // Pelusita muestra el error con animación de horror
+    const lista = faltantes.slice(0,5).map(n=>'P'+n).join(', ')+(faltantes.length>5?'…':'');
+    const msg = `NYA?! 😱 ¡Espera!\n\nFaltan ${faltantes.length} consigna${faltantes.length>1?'s':''} sin responder:\n${lista}\n\n¡Completá TODAS antes de enviar, nya~! ♡\n\nUsá el botón 📍 del panel derecho para ir a la primera que falta.`;
+    pelusitaError(msg);
     // Scroll a la primera faltante
     const firstEl=document.getElementById('qb_'+qId(faltantes[0]));
-    if(firstEl) firstEl.scrollIntoView({behavior:'smooth',block:'center'});
+    if(firstEl) setTimeout(()=>firstEl.scrollIntoView({behavior:'smooth',block:'center'}),400);
     return;
   }
 
