@@ -16,7 +16,15 @@
   --green:#059669;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;
   --practico-bg:#1c0f00;--practico-border:#b45309;--practico-text:#fcd34d;
 }
-body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh;font-size:14px}
+/* ── MODO CLARO ─────────────────────────────────────── */
+body.light-mode{
+  --bg:#f1f5f9;--panel:#ffffff;--card:#f8fafc;--deep:#e2e8f0;
+  --border:#cbd5e1;--border2:#94a3b8;--text:#1e293b;--muted:#64748b;
+  --blue:#2563eb;--blue-l:#3b82f6;--blue-ll:#1d4ed8;
+  --green:#16a34a;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;
+  --practico-bg:#fffbeb;--practico-border:#d97706;--practico-text:#92400e;
+}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh;font-size:14px;transition:background .3s,color .3s;}
 a{color:var(--blue-l);text-decoration:none}
 
 /* ── TOPBAR ─────────────────────────────────────────── */
@@ -674,6 +682,17 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
     <div class="side-btn-tooltip">
       <strong>📍 Ir a donde lo dejaste</strong>
       Te lleva a la primera consigna sin responder luego de la última que completaste, para que puedas continuar desde ahí sin tener que buscarla manualmente.
+    </div>
+  </button>
+
+  <!-- TOGGLE MODO CLARO / OSCURO -->
+  <button class="side-btn" id="btn-theme-toggle"
+    style="background:#1e293b;border-color:#475569;color:#94a3b8;"
+    onclick="toggleTheme()">
+    <i class="fa-solid fa-moon" id="theme-icon"></i>
+    <div class="side-btn-tooltip">
+      <strong>🌙 / ☀️ Modo claro / oscuro</strong>
+      Cambiá entre el fondo oscuro (por defecto) y el modo claro según tu preferencia. Tu elección se guarda para la próxima vez.
     </div>
   </button>
 
@@ -1570,6 +1589,33 @@ function irUltimaConsigna(){
   setTimeout(()=>{ el.style.outline=orig||''; }, 2000);
 }
 
+// ── Toggle modo claro / oscuro ────────────────────────────
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('recu_theme', isLight ? 'light' : 'dark');
+  _applyThemeBtn(isLight);
+}
+function _applyThemeBtn(isLight){
+  const btn  = document.getElementById('btn-theme-toggle');
+  const icon = document.getElementById('theme-icon');
+  if(!btn||!icon) return;
+  if(isLight){
+    btn.style.background='#f1f5f9'; btn.style.borderColor='#cbd5e1'; btn.style.color='#1e293b';
+    icon.className='fa-solid fa-sun';
+  } else {
+    btn.style.background='#1e293b'; btn.style.borderColor='#475569'; btn.style.color='#94a3b8';
+    icon.className='fa-solid fa-moon';
+  }
+}
+// Inicializar tema desde localStorage al cargar
+(function(){
+  const saved = localStorage.getItem('recu_theme');
+  if(saved === 'light'){
+    document.body.classList.add('light-mode');
+    // El botón no existe aún en este punto, se inicializa en renderExam
+  }
+})();
+
 function showExpired(){
   document.getElementById('step1').style.display = 'none';
   document.getElementById('step2').style.display = 'none';
@@ -1683,6 +1729,8 @@ function renderExam(){
   document.getElementById('step2').style.display = 'block';
   document.getElementById('side-panel').style.display = 'flex';
   renderDatosBanner();
+  // Aplicar el ícono del botón según el tema actual
+  _applyThemeBtn(document.body.classList.contains('light-mode'));
   root.innerHTML = '';
   snav.innerHTML = '';
   totalQuestions = 0;
