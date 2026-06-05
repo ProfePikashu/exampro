@@ -1396,8 +1396,7 @@ function restoreExam(){
 }
 
 async function guardarYCerrar(){
-  // 1. PRIMERO detener timers para evitar race conditions con autosave
-  clearInterval(timerInterval);
+  // Solo detener el autosave (evitar race conditions) — el timer NUNCA se detiene
   clearInterval(autosaveInterval);
 
   const btn = document.getElementById('btn-guardar-cerrar');
@@ -1429,7 +1428,6 @@ async function guardarYCerrar(){
   document.getElementById('side-panel').style.display = 'none';
 
   // 6. Usar appendChild para NO destruir el DOM existente
-  const remaining = EXAM_DURATION_MS - (Date.now() - new Date(SESSION.started_at).getTime());
   const closeDiv = document.createElement('div');
   closeDiv.style.cssText = 'max-width:500px;margin:80px auto;text-align:center;';
   closeDiv.innerHTML = `
@@ -1437,8 +1435,9 @@ async function guardarYCerrar(){
     <h2 style="font-size:20px;font-weight:700;color:#22c55e;margin-bottom:8px;">Progreso guardado</h2>
     <p style="font-size:13px;color:#86efac;margin-bottom:6px;">Tus respuestas fueron guardadas correctamente.</p>
     <p style="font-size:12px;color:#4ade80;line-height:1.6;">Cuando quieras continuar, abrí el mismo link, ingresá con tu <strong>correo electrónico</strong> y <strong>DNI</strong> y retomá donde lo dejaste.</p>
-    <p style="font-size:11px;color:#166534;margin-top:16px;">Tiempo restante: <strong>${formatMs(Math.max(0, remaining))}</strong></p>`;
+    <p style="font-size:11px;color:#94a3b8;margin-top:16px;">⚠️ El contador de 48hs <strong>sigue corriendo</strong> aunque cierres esta ventana.</p>`;
   document.getElementById('main').appendChild(closeDiv);
+  // El timer del topbar sigue corriendo (timerInterval NO se detuvo)
 }
 
 // ── Modal confirmación de datos ──────────────────────────
