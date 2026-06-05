@@ -182,7 +182,8 @@ input[type=text],input[type=email]{height:38px;resize:none}
 .opt-label input[type=radio],.opt-label input[type=checkbox]{
   width:15px;height:15px;accent-color:var(--blue);cursor:pointer;flex-shrink:0;
 }
-.opt-label.selected{border-color:var(--blue);background:#1e3a5f}
+.opt-label.selected{border-color:var(--blue);background:#1e3a5f;color:var(--text)}
+body.light-mode .opt-label.selected{background:#dbeafe;color:#1e293b}
 
 /* ── EDIT INPUT ──────────────────────────────────────── */
 .edit-input{width:100%;background:var(--deep);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;box-sizing:border-box;}
@@ -1715,12 +1716,6 @@ function renderDatosBanner(){
           🎮 <strong style="color:#c084fc">@${SESSION.twitch}</strong>
         </span>`:''}
       </div>
-      <button onclick="abrirEditModal()"
-        style="flex-shrink:0;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;padding:5px 12px;cursor:pointer;transition:all .15s;"
-        onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue-l)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-        ✏️ Editar mis datos
-      </button>
     </div>`;
 }
 
