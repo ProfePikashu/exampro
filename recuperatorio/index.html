@@ -2214,13 +2214,22 @@ function restoreAnswers(){
     } else if(q.type==='list'){
       ltSetValue(id, val);
     } else if(q.type==='list_prefilled'){
-      // Restaurar solo los desarrollos por posición (formato: title||dev|||title||dev|||...)
-      const items = val.split('|||');
-      const rows  = ltGetAllRows(id);
-      items.forEach((item, i)=>{
-        const sepIdx = item.indexOf('||');
-        const dev = sepIdx>=0 ? item.slice(sepIdx+2).trim() : '';
-        const row = rows[i]; if(!row||!dev) return;
+      // Restaurar por TÍTULO (no por índice) para evitar desorden si el almacenamiento difiere
+      // Construimos mapa: título → desarrollo
+      const devMap = {};
+      val.split('|||').forEach(item=>{
+        const sep = item.indexOf('||');
+        if(sep < 0) return;
+        const title = item.slice(0, sep).trim();
+        const dev   = item.slice(sep+2).trim();
+        if(title && dev) devMap[title] = dev;
+      });
+      // Asignar cada desarrollo a la fila que tenga ese título
+      ltGetAllRows(id).forEach(row=>{
+        const ti = row.querySelector('.lt-title-input');
+        if(!ti) return;
+        const dev = devMap[ti.value.trim()];
+        if(!dev) return;
         const ta = row.querySelector('textarea');
         if(ta){
           ta.value=dev;
