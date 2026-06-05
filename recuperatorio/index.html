@@ -516,63 +516,6 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
         </div>
       </div>
 
-      <!-- Modal de confirmación de datos -->
-      <div id="confirm-modal" style="display:none;position:fixed;inset:0;background:#00000090;z-index:300;align-items:center;justify-content:center;padding:20px;">
-        <div style="background:#111827;border:2px solid var(--blue);border-radius:16px;padding:28px;max-width:460px;width:100%;box-shadow:0 20px 60px #00000080;">
-          <div style="text-align:center;margin-bottom:20px;">
-            <div style="font-size:32px;margin-bottom:10px;">🔍</div>
-            <div style="font-size:18px;font-weight:700;color:#e2e8f0;">¿TODOS LOS DATOS SON CORRECTOS?</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:6px;">Verificá bien antes de iniciar. No podrás cambiarlos fácilmente después.</div>
-          </div>
-          <div id="confirm-datos" style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;"></div>
-          <div style="display:flex;gap:10px;">
-            <button onclick="confirmarDatosNo()"
-              style="flex:1;padding:12px;background:#1c0606;border:2px solid var(--red);border-radius:10px;color:#fca5a5;font-weight:700;font-size:14px;cursor:pointer;">
-              ✏️ NO, editar datos
-            </button>
-            <button onclick="confirmarDatosSi()"
-              style="flex:1;padding:12px;background:#052e16;border:2px solid #16a34a;border-radius:10px;color:#4ade80;font-weight:700;font-size:14px;cursor:pointer;">
-              ✅ SÍ, son correctos
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Modal de edición de datos -->
-      <div id="edit-modal" style="display:none;position:fixed;inset:0;background:#00000090;z-index:300;align-items:center;justify-content:center;padding:20px;">
-        <div style="background:#111827;border:2px solid var(--border);border-radius:16px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px #00000080;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-            <div style="font-size:15px;font-weight:700;color:#e2e8f0;">✏️ Editar mis datos</div>
-            <button onclick="cerrarEditModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
-            <div>
-              <div class="field-label">Nombre y Apellido <span class="req">*</span></div>
-              <input type="text" id="edit-nombre" class="edit-input" placeholder="Nombre completo">
-            </div>
-            <div>
-              <div class="field-label">DNI <span class="req">*</span></div>
-              <input type="text" id="edit-dni" class="edit-input" placeholder="Sin puntos" inputmode="numeric"
-                oninput="this.value=this.value.replace(/[.\s]/g,'')">
-            </div>
-            <div>
-              <div class="field-label">Correo electrónico <span class="req">*</span></div>
-              <input type="email" id="edit-email" class="edit-input" placeholder="tu@correo.com">
-            </div>
-            <div>
-              <div class="field-label">Usuario de Twitch</div>
-              <input type="text" id="edit-twitch" class="edit-input" placeholder="sin el @"
-                oninput="if(this.value.startsWith('@'))this.value=this.value.slice(1)">
-            </div>
-          </div>
-          <div id="edit-err" style="display:none;background:#1c0606;border:1px solid var(--red);border-radius:8px;padding:8px 12px;font-size:12px;color:#fca5a5;margin-bottom:12px;"></div>
-          <button onclick="guardarEdicion()" id="btn-edit-save"
-            style="width:100%;padding:12px;background:#1d4ed8;border:none;border-radius:10px;color:#fff;font-weight:700;font-size:14px;cursor:pointer;">
-            <i class="fa-solid fa-save"></i> Guardar cambios
-          </button>
-        </div>
-      </div>
-
       <!-- Pantalla de abandono -->
       <div id="abandon-screen">
         <div class="abandon-title"><i class="fa-solid fa-ban"></i> No podés continuar</div>
@@ -651,6 +594,63 @@ hr.q-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
 </div>
 
 </div><!-- /main -->
+
+<!-- ══ MODALES GLOBALES (fuera de step1/step2 para que funcionen siempre) ══ -->
+
+<!-- Modal de confirmación de datos -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;background:#00000090;z-index:400;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#111827;border:2px solid var(--blue);border-radius:16px;padding:28px;max-width:460px;width:100%;box-shadow:0 20px 60px #00000080;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:32px;margin-bottom:10px;">🔍</div>
+      <div style="font-size:18px;font-weight:700;color:#e2e8f0;">¿TODOS LOS DATOS SON CORRECTOS?</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">Verificá bien antes de iniciar. No podrás cambiarlos fácilmente después.</div>
+    </div>
+    <div id="confirm-datos" style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="confirmarDatosNo()" style="flex:1;padding:12px;background:#1c0606;border:2px solid var(--red);border-radius:10px;color:#fca5a5;font-weight:700;font-size:14px;cursor:pointer;">✏️ NO, editar datos</button>
+      <button onclick="confirmarDatosSi()" style="flex:1;padding:12px;background:#052e16;border:2px solid #16a34a;border-radius:10px;color:#4ade80;font-weight:700;font-size:14px;cursor:pointer;">✅ SÍ, son correctos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de edición de datos -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:#00000090;z-index:400;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#111827;border:2px solid var(--border);border-radius:16px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px #00000080;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="font-size:15px;font-weight:700;color:#e2e8f0;">✏️ Editar mis datos</div>
+      <button onclick="cerrarEditModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Advertencia si cambia DNI o email -->
+    <div style="background:#2a1700;border:1px solid #d97706;border-radius:8px;padding:8px 12px;font-size:11px;color:#fde68a;margin-bottom:14px;line-height:1.5;">
+      ⚠️ <strong>Atención:</strong> Si cambiás el <strong>DNI</strong> o el <strong>correo electrónico</strong>, tu sesión en Supabase se busca por esos datos. Cambiarlos puede afectar la recuperación de tu examen en otro dispositivo.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
+      <div>
+        <div class="field-label">Nombre y Apellido <span class="req">*</span></div>
+        <input type="text" id="edit-nombre" class="edit-input" placeholder="Nombre completo">
+      </div>
+      <div>
+        <div class="field-label">DNI <span class="req">*</span></div>
+        <input type="text" id="edit-dni" class="edit-input" placeholder="Sin puntos" inputmode="numeric"
+          oninput="this.value=this.value.replace(/[.\s]/g,'')">
+      </div>
+      <div>
+        <div class="field-label">Correo electrónico <span class="req">*</span></div>
+        <input type="email" id="edit-email" class="edit-input" placeholder="tu@correo.com">
+      </div>
+      <div>
+        <div class="field-label">Usuario de Twitch</div>
+        <input type="text" id="edit-twitch" class="edit-input" placeholder="sin el @"
+          oninput="if(this.value.startsWith('@'))this.value=this.value.slice(1)">
+      </div>
+    </div>
+    <div id="edit-err" style="display:none;background:#1c0606;border:1px solid var(--red);border-radius:8px;padding:8px 12px;font-size:12px;color:#fca5a5;margin-bottom:12px;"></div>
+    <button onclick="guardarEdicion()" id="btn-edit-save"
+      style="width:100%;padding:12px;background:#1d4ed8;border:none;border-radius:10px;color:#fff;font-weight:700;font-size:14px;cursor:pointer;">
+      <i class="fa-solid fa-save"></i> Guardar cambios
+    </button>
+  </div>
+</div>
 
 <!-- PANEL FLOTANTE (oculto hasta que inicia el examen) -->
 <div id="side-panel" style="display:none">
@@ -950,6 +950,29 @@ const EXAM_DURATION_MS = 48 * 60 * 60 * 1000;   // 48 horas
 const AUTOSAVE_MS      = 30 * 1000;              // 30 segundos
 const SESSION_KEY      = 'recuperatorio_ayrpc_v1';
 const TZ               = 'America/Argentina/Buenos_Aires';
+
+// ── Prevenir múltiples pestañas con el mismo DNI ──────────
+const _bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('recuperatorio_ayrpc') : null;
+if(_bc){
+  _bc.onmessage = e => {
+    if(!SESSION) return;
+    if(e.data.type === 'tab_active' && e.data.dni === SESSION.dni && e.data.token !== SESSION.session_token){
+      // Otra pestaña usa la misma sesión → advertir
+      document.body.insertAdjacentHTML('beforeend',`
+        <div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#3b0a0a;border-bottom:2px solid #dc2626;
+          color:#fca5a5;text-align:center;padding:12px 16px;font-size:13px;font-weight:700;">
+          ⚠️ Este recuperatorio ya está abierto en otra pestaña o ventana.
+          Cerrá esta para evitar pérdida de datos.
+          <button onclick="window.close()" style="margin-left:12px;background:#dc2626;color:#fff;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:700;">
+            Cerrar esta pestaña
+          </button>
+        </div>`);
+    }
+  };
+}
+function _broadcastTab(){
+  if(_bc && SESSION) _bc.postMessage({type:'tab_active', dni:SESSION.dni, token:SESSION.session_token});
+}
 
 const sb = (SUPABASE_URL && SUPABASE_KEY)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
@@ -1564,6 +1587,9 @@ function showExpired(){
 function startTimer(){
   updateTimer();
   timerInterval = setInterval(updateTimer, 1000);
+  // Broadcast presencia cada 10s para detectar múltiples pestañas
+  _broadcastTab();
+  setInterval(_broadcastTab, 10000);
 }
 
 function updateTimer(){
@@ -1934,6 +1960,7 @@ function ltAddRowToSection(id, sectionIdx, prefilled, title){
 }
 
 function ltRemoveRowFromSection(rowId, id){
+  if(!confirm('¿Eliminar esta respuesta? Esta acción no se puede deshacer.')) return;
   const row = document.getElementById(rowId);
   if(row){ row.remove(); ltRenumberSectioned(id); calcProgress(); }
 }
@@ -1979,15 +2006,11 @@ function ltAddRow(id, prefilled, title){
 
 function ltToggleDev(btn, rowId){
   const area = document.getElementById('ltdev_'+rowId);
-  const open = area.style.display === 'block';
-  area.style.display = open ? 'none' : 'block';
-  btn.classList.toggle('open', !open);
-  const icon = btn.querySelector('i');
-  icon.className = 'fa-solid ' + (open ? 'fa-pen-to-square' : 'fa-chevron-up');
-  const label = btn.lastChild;
-  if(label.nodeType===3) btn.removeChild(label);
-  btn.appendChild(document.createTextNode(open ? ' Agregar desarrollo' : ' Ocultar'));
-  if(!open) area.querySelector('textarea').focus();
+  // Solo abre, nunca cierra (el botón desaparece una vez que se abre)
+  area.style.display = 'block';
+  btn.classList.add('open');
+  btn.style.display = 'none'; // ocultar el botón para que no quede el "Ocultar"
+  area.querySelector('textarea').focus();
 }
 
 function ltOnDevInput(ta, rowId){
@@ -1998,6 +2021,7 @@ function ltOnDevInput(ta, rowId){
 }
 
 function ltRemoveRow(rowId, id){
+  if(!confirm('¿Eliminar esta respuesta? Esta acción no se puede deshacer.')) return;
   const row = document.getElementById(rowId);
   if(row){ row.remove(); ltRenumber(id); calcProgress(); }
 }
@@ -2062,7 +2086,7 @@ function ltSetValue(id, val){
         const ti = row.querySelector('.lt-title-input');
         const ta = row.querySelector('textarea');
         if(ti && !ti.readOnly) ti.value = title||'';
-        if(ta && dev){ ta.value=dev; ltOnDevInput(ta,row.id); document.getElementById('ltdev_'+row.id).style.display='block'; row.querySelector('.lt-dev-toggle')?.classList.add('open','has-content'); }
+        if(ta && dev){ ta.value=dev; ltOnDevInput(ta,row.id); document.getElementById('ltdev_'+row.id).style.display='block'; (() => { const tb=row.querySelector('.lt-dev-toggle'); if(tb){tb.classList.add('open','has-content');tb.style.display='none';} })(); }
       });
       itemIdx += secItems.length;
       si++;
@@ -2082,7 +2106,7 @@ function ltSetValue(id, val){
     const ti = row.querySelector('.lt-title-input');
     const ta = row.querySelector('textarea');
     if(ti && !ti.readOnly) ti.value = title||'';
-    if(ta && dev){ ta.value = dev; ltOnDevInput(ta, row.id); document.getElementById('ltdev_'+row.id).style.display='block'; row.querySelector('.lt-dev-toggle')?.classList.add('open','has-content'); }
+    if(ta && dev){ ta.value = dev; ltOnDevInput(ta, row.id); document.getElementById('ltdev_'+row.id).style.display='block'; (() => { const tb=row.querySelector('.lt-dev-toggle'); if(tb){tb.classList.add('open','has-content');tb.style.display='none';} })(); }
   });
 }
 
@@ -2236,7 +2260,7 @@ function restoreAnswers(){
           ltOnDevInput(ta,row.id);
           const area=document.getElementById('ltdev_'+row.id);
           if(area) area.style.display='block';
-          row.querySelector('.lt-dev-toggle')?.classList.add('open','has-content');
+          (() => { const tb=row.querySelector('.lt-dev-toggle'); if(tb){tb.classList.add('open','has-content');tb.style.display='none';} })();
         }
       });
     } else if(q.type==='tf'||q.type==='radio'){
@@ -2502,7 +2526,24 @@ function openTextInput(canvas, ctx, p, state){
   const input = document.createElement('input');
   input.id   = 'draw-text-input';
   input.type = 'text';
-  input.placeholder = 'Escribí y presioná Enter…';
+  input.placeholder = 'Escribí texto · Enter para confirmar · Esc para cancelar';
+
+  // Guardamos el snapshot ANTES del texto para poder moverlo con undo
+  state.history.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+  if(state.history.length>30) state.history.shift();
+
+  // Función para previsualizar el texto en tiempo real
+  let previewSnapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
+  const preview = () => {
+    ctx.putImageData(previewSnapshot,0,0);
+    const text = input.value;
+    if(text){
+      ctx.fillStyle = state.color;
+      ctx.font = `${fontSize}px Inter,sans-serif`;
+      ctx.fillText(text, p.x, p.y);
+    }
+  };
+
   Object.assign(input.style, {
     position:'fixed',
     left: (rect.left + p.x/scale) + 'px',
@@ -2513,20 +2554,26 @@ function openTextInput(canvas, ctx, p, state){
     fontSize: fontSize+'px',
     fontFamily:'Inter,sans-serif',
     outline:'none',
-    minWidth:'140px',
+    minWidth:'180px',
     zIndex:'9999',
     padding:'2px 6px',
     borderRadius:'4px',
     backdropFilter:'blur(4px)',
   });
+  input.addEventListener('input', preview);
   document.body.appendChild(input);
   input.focus();
   const commit = () => {
     const text = input.value.trim();
+    // Redibuja limpio (sin el preview) y luego aplica el texto final
+    ctx.putImageData(previewSnapshot,0,0);
     if(text){
       ctx.fillStyle = state.color;
       ctx.font = `${fontSize}px Inter,sans-serif`;
       ctx.fillText(text, p.x, p.y);
+    } else {
+      // Canceló sin texto → restaurar snapshot anterior (undo del push que hicimos)
+      if(state.history.length) ctx.putImageData(state.history.pop(),0,0);
     }
     if(document.body.contains(input)) input.remove();
   };
