@@ -963,9 +963,9 @@ window.pelusitaError = function(msg){
 // ════════════════════════════════════════════════════════
 //  CONFIG — completar antes de publicar
 // ════════════════════════════════════════════════════════
-const GAS_URL      = 'https://script.google.com/macros/s/AKfycbzTBYbHflDbJffrmm6q1bruijBMVHnvm3Qd18yzSlrjW2bGrfpP_P-vYPqtbzFqkr60/exec';       // ← URL del Google Apps Script web app (doPost)
-const SUPABASE_URL = 'https://vdgujwtyqyhudrieodjj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_c3y7VhdedYe_xZ2jSuG1Sw_hyzqpzWg';
+const GAS_URL      = ''; // CERRADO 2026-06-30 23:59 - envio a Apps Script desactivado
+const SUPABASE_URL = ''; // CERRADO 2026-06-30 23:59 - Supabase frontend desactivado
+const SUPABASE_KEY = ''; // CERRADO 2026-06-30 23:59 - Supabase frontend desactivado
 const EXAM_DURATION_MS = 48 * 60 * 60 * 1000;   // 48 horas
 const AUTOSAVE_MS      = 30 * 1000;              // 30 segundos
 const SESSION_KEY      = 'recuperatorio_ayrpc_v1';
@@ -2669,6 +2669,46 @@ function toggleAttach(btn){
 window.addEventListener('scroll', () => {
   document.getElementById('scroll-top').style.opacity = window.scrollY>400?'1':'0';
 });
+</script>
+<script id="recu-cierre-ayrpc-2025">
+/*
+  CIERRE RECUPERATORIO AYRPC 2025
+  Fecha oficial de cierre: 30/06/2026 23:59 - America/Argentina/Buenos_Aires.
+  Este bloqueo cierra la pagina publicada en GitHub Pages y desactiva acciones del frontend.
+  El candado real adicional debe quedar tambien en Supabase / Apps Script.
+*/
+const RECUPERATORIO_CERRADO = true;
+
+function mostrarCierreRecuperatorio(){
+  try { if (typeof timerInterval !== 'undefined') clearInterval(timerInterval); } catch(e) {}
+  try { if (typeof autosaveInterval !== 'undefined') clearInterval(autosaveInterval); } catch(e) {}
+
+  document.body.innerHTML = ''
+    + '<main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at top,#1e1b4b,#020617 62%);font-family:Inter,system-ui,sans-serif;color:#e5e7eb;">'
+    + '  <section style="max-width:760px;width:100%;background:rgba(15,23,42,.96);border:1px solid #475569;border-radius:22px;padding:34px 28px;box-shadow:0 24px 80px rgba(0,0,0,.45);text-align:center;">'
+    + '    <div style="font-size:42px;margin-bottom:12px;">CERRADO</div>'
+    + '    <h1 style="font-size:28px;line-height:1.2;margin:0 0 12px;color:#f8fafc;">Recuperatorio AyRPC 2025 cerrado</h1>'
+    + '    <p style="font-size:16px;line-height:1.65;color:#cbd5e1;margin:0 auto 18px;max-width:620px;">El recuperatorio cerro el <strong>30/06/2026 a las 23:59</strong>. Ya no es posible iniciar, recuperar, guardar ni enviar respuestas.</p>'
+    + '    <div style="background:#1e293b;border:1px solid #334155;border-radius:14px;padding:16px;margin:20px auto;text-align:left;max-width:620px;color:#cbd5e1;font-size:14px;line-height:1.6;">'
+    + '      <strong style="color:#f8fafc;">Estado:</strong> instancia finalizada.<br>'
+    + '      <strong style="color:#f8fafc;">Curso:</strong> Armado y Reparacion de PC - AyRPC 2025.<br>'
+    + '      <strong style="color:#f8fafc;">Importante:</strong> si ya enviaste tu recuperatorio antes del cierre, tu entrega queda registrada para revision.'
+    + '    </div>'
+    + '    <p style="font-size:13px;color:#94a3b8;margin:0;">Ante cualquier inconveniente real, contactate con el docente por los canales oficiales.</p>'
+    + '  </section>'
+    + '</main>';
+}
+
+window._arrancarExamen = async function(){ mostrarCierreRecuperatorio(); return false; };
+window.retomarSesion = async function(){ mostrarCierreRecuperatorio(); return false; };
+window.guardarYCerrar = async function(){ mostrarCierreRecuperatorio(); return false; };
+window.guardarEdicion = async function(){ mostrarCierreRecuperatorio(); return false; };
+window.startAutosave = function(){ return false; };
+window.autosave = async function(){ return false; };
+window.submitExamen = async function(){ mostrarCierreRecuperatorio(); return false; };
+
+window.addEventListener('DOMContentLoaded', mostrarCierreRecuperatorio);
+window.addEventListener('load', mostrarCierreRecuperatorio);
 </script>
 </body>
 </html>
